@@ -1,23 +1,42 @@
 # Changelog
 
-## 2.3.0
-- Added named rule events, threshold-crossing milestones, message-count cooldowns, and AND/OR/NOT text and meter conditions.
-- Added AI-conditioned rules with opt-in evaluation, non-switching SillyTavern Connection Profile requests, active-connection fallback, and optional OpenAI-compatible fallback.
-- Added an in-app JSON rulebook editor with validation.
+All notable changes to Runebook will be documented in this file.
 
-## 2.2.0
-- Master switch plus separate switches for the meters panel, change notes and prompt injection.
-- Drawer info boxes and tooltips; README sections on cost, troubleshooting and generating rulebooks with an AI.
-- Test panel (dry-run a sample message) and prompt preview with token estimate.
+## [1.0.0] - 2026-11-23
 
-## 2.1.0
-- Dock left/right of chat or float; per-rulebook minimize; auto-compact with 3+ rulebooks or narrow screens.
-- Meter `icon`, `color`, bar `style: slider`, pip shapes; influence `description` and `color`.
-- Fading on-screen change notes; Rescan chat button.
+### Initial Release
+- Core extension architecture with Silly Tavern integration
+- Three meter types: Bar, Pips, Number
+- Rule system with text-matching and regex conditions
+- Trigger system for event-based actions
+- UI panel manager for viewing active runebooks
+- Export/import functionality for sharing configurations
+- Example configurations included (Affection Tracker, Wallet Tracker, Dice Game)
+- Comprehensive documentation (README, API reference, User Guide)
+- Color-coded meter visualizations
+- Level threshold support with status messages
 
-## 2.0.0
-- Rewrote as a plain-JavaScript SillyTavern extension. The React/JSX components, loader, constants and unused docs were removed because SillyTavern has no build step.
-- Meter values are saved per chat; rulebooks are saved in SillyTavern settings.
-- Added influence rules (status labels and prompt text), decay, dice amounts and `on: user|ai|both`.
-- Keyword matching is now whole-word and case-insensitive.
-- Old `condition`/`action` JSON files still import.
+## [Upcoming] - Planned Features
+
+### Version 1.1.0 (Planned)
+- Advanced expression parser for complex conditions
+- AI-generated rulebook templates based on chat descriptions
+- Mobile-responsive UI design improvements
+- Notification system for meter changes
+- Integration with Silly Tavern's image generation API
+- Import from SpicyChat rulebook files
+
+### Version 1.2.0 (Planned)
+- Shared library of popular runebook templates
+- Cloud storage integration for saving configurations
+- Mobile app companion
+- Custom themes and styling options
+- Keyboard shortcut support
+- Plugin system for community-developed actions
+
+## [Unreleased] - Future Development
+
+- Performance optimizations for complex rulebooks with many rules
+- Advanced AI semantic analysis beyond keyword matching
+- Cross-session persistence of meter states
+- Analytics dashboard showing usage patterns

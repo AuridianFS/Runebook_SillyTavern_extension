@@ -2,48 +2,109 @@
   "name": "Wallet Tracker",
   "meters": [
     {
-      "id": "gold",
-      "name": "Gold",
+      "id": "meter_wallet",
+      "name": "Money ($)",
       "type": "number",
+      "startValue": 100.0,
+      "decimalPlaces": 2
+    },
+    {
+      "id": "meter_broke_status",
+      "name": "Broke Status",
+      "type": "bar",
+      "startValue": 0,
       "min": 0,
-      "start": 50,
-      "icon": "🪙",
-      "color": "#ffcc00"
+      "max": 100
     }
   ],
   "rules": [
     {
-      "name": "Earned coin",
-      "meter": "gold",
-      "regex": "\\b(?:receive|earn|find)s?\\b.{0,20}\\bgold\\b",
-      "change": "1d10"
+      "id": "rule_spending",
+      "name": "Spending money",
+      "condition": {
+        "type": "regex",
+        "pattern": "\\b(\\d+)\\s*(dollars?|bucks?)\\b",
+        "negative": true
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_wallet",
+        "change": -10.0,
+        "frequency": "once_per_chat"
+      }
     },
     {
-      "name": "Bought something",
-      "meter": "gold",
-      "keywords": [
-        "buy",
-        "purchase",
-        "pay for"
-      ],
-      "on": "user",
-      "change": -5
+      "id": "rule_earning",
+      "name": "Earning money",
+      "condition": {
+        "type": "regex",
+        "pattern": "\\b(\\d+)\\s*(dollars?|bucks?)\\b"
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_wallet",
+        "change": 10.0,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "rule_buy_item",
+      "name": "Buy item interaction",
+      "condition": {
+        "type": "contains_any",
+        "words": ["buy", "purchase", "spent"]
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_wallet",
+        "change": -5.0,
+        "frequency": "always"
+      }
+    },
+    {
+      "id": "rule_low_money_warning",
+      "name": "Low money warning",
+      "condition": {
+        "type": "contains_any",
+        "words": ["poor", "broke"]
+      },
+      "action": {
+        "type": "show_status",
+        "status": "{{user}} is feeling poor!",
+        "frequency": "once_per_chat"
+      }
     }
   ],
-  "influences": [
+  "triggers": [
     {
-      "meter": "gold",
-      "min": 0,
-      "max": 9,
-      "status": "Broke",
-      "text": "{{user}} is nearly out of gold and cannot afford much."
+      "id": "trigger_broke_threshold",
+      "name": "Broke threshold reached",
+      "condition": {
+        "type": "meter_below",
+        "meterId": "meter_wallet",
+        "threshold": 10.0
+      },
+      "action": {
+        "type": "set_meter",
+        "meterId": "meter_broke_status",
+        "value": 100,
+        "frequency": "once_per_chat"
+      }
     },
     {
-      "meter": "gold",
-      "min": 200,
-      "max": 1000000000,
-      "status": "Rich",
-      "text": "{{user}} is wealthy and merchants treat them accordingly."
+      "id": "trigger_recovery",
+      "name": "Money recovered",
+      "condition": {
+        "type": "meter_above",
+        "meterId": "meter_wallet",
+        "threshold": 50.0
+      },
+      "action": {
+        "type": "set_meter",
+        "meterId": "meter_broke_status",
+        "value": 0,
+        "frequency": "once_per_chat"
+      }
     }
   ]
 }

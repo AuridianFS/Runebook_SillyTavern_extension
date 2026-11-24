@@ -1,79 +1,156 @@
 {
-  "name": "Dice Game",
+  "name": "Dice Game Tracker",
   "meters": [
     {
-      "id": "hp",
-      "name": "HP",
-      "type": "bar",
-      "min": 0,
-      "max": 20,
-      "start": 20,
-      "icon": "❤️",
-      "color": "#ff5252"
+      "id": "meter_hp",
+      "name": "Health Points (HP)",
+      "type": "number",
+      "startValue": 100.0,
+      "decimalPlaces": 0
     },
     {
-      "id": "danger",
-      "name": "Danger",
+      "id": "meter_dice_roll",
+      "name": "Last Roll",
+      "type": "bar",
+      "startValue": 50,
+      "min": 1,
+      "max": 20
+    },
+    {
+      "id": "meter_danger_level",
+      "name": "Danger Level",
       "type": "pips",
+      "startValue": 0,
       "min": 0,
-      "max": 3,
-      "start": 0,
-      "decay": {
-        "after": 4,
-        "amount": -1
-      },
-      "icon": "☠️",
-      "pip": "square"
+      "max": 3
     }
   ],
   "rules": [
     {
-      "name": "Hit taken",
-      "meter": "hp",
-      "keywords": [
-        "wounded",
-        "stabs",
-        "slashes",
-        "hits you"
-      ],
-      "on": "ai",
-      "change": "-1d4"
+      "id": "rule_critical_hit",
+      "name": "Critical hit (natural 20)",
+      "condition": {
+        "type": "contains_any",
+        "words": ["critical", "crit", "twenty"]
+      },
+      "action": {
+        "type": "set_meter",
+        "meterId": "meter_dice_roll",
+        "value": 20.0,
+        "frequency": "once_per_chat"
+      }
     },
     {
-      "name": "Healing",
-      "meter": "hp",
-      "keywords": [
-        "potion",
-        "bandage",
-        "rest"
-      ],
-      "change": "1d6"
+      "id": "rule_fail_hurt",
+      "name": "Failed roll hurts HP",
+      "condition": {
+        "type": "contains_any",
+        "words": ["failed", "missed"]
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_hp",
+        "change": -1,
+        "frequency": "once_per_chat"
+      }
     },
     {
-      "name": "Ambush",
-      "meter": "danger",
-      "keywords": [
-        "ambush",
-        "trap"
-      ],
-      "on": "ai",
-      "change": 1
+      "id": "rule_success_heal",
+      "name": "Success heals HP",
+      "condition": {
+        "type": "contains_any",
+        "words": ["hit!", "success"]
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_hp",
+        "change": 1,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "rule_show_status_down",
+      "name": "HP low warning",
+      "condition": {
+        "type": "below_threshold",
+        "threshold": 30.0
+      },
+      "action": {
+        "type": "show_status",
+        "status": "{{user}} is down and in trouble!",
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "rule_show_status_critical",
+      "name": "Critical HP warning",
+      "condition": {
+        "type": "below_threshold",
+        "threshold": 10.0
+      },
+      "action": {
+        "type": "show_status",
+        "status": "{{user}} is near death! Roll a natural 20 to recover!",
+        "frequency": "once_per_chat"
+      }
     }
   ],
-  "influences": [
+  "triggers": [
     {
-      "meter": "hp",
-      "min": 0,
-      "max": 5,
-      "status": "Critical",
-      "text": "{{user}} is badly hurt. Describe pain and exhaustion."
+      "id": "trigger_natural_20_heal",
+      "name": "Natural 20 heals HP",
+      "condition": {
+        "type": "dice_roll_exact",
+        "value": 20
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_hp",
+        "change": 1,
+        "frequency": "always"
+      }
     },
     {
-      "meter": "danger",
-      "min": 3,
-      "max": 3,
-      "status": "Deadly",
-      "text": "Enemies are now actively trying to kill {{user}}."
+      "id": "trigger_natural_1_hurt",
+      "name": "Natural 1 takes extra damage",
+      "condition": {
+        "type": "dice_roll_exact",
+        "value": 1
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_hp",
+        "change": -2,
+        "frequency": "always"
+      }
+    },
+    {
+      "id": "trigger_danger_level_up",
+      "name": "Danger level increases",
+      "condition": {
+        "type": "hp_below_threshold",
+        "threshold": 50.0
+      },
+      "action": {
+        "type": "set_meter",
+        "meterId": "meter_danger_level",
+        "value": 1,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "trigger_extreme_danger",
+      "name": "Extreme danger level",
+      "condition": {
+        "type": "hp_below_threshold",
+        "threshold": 20.0
+      },
+      "action": {
+        "type": "set_meter",
+        "meterId": "meter_danger_level",
+        "value": 3,
+        "frequency": "once_per_chat"
+      }
     }
   ]
 }
