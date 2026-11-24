@@ -1,100 +1,132 @@
-# Runebook
+# Runebook Extension for Silly Tavern
 
-SpicyChat-style Rulebooks for SillyTavern. A rulebook has:
+Track conditions, elements, and story progression in your RP/ERP sessions with interactive meters, rules, and triggers. Inspired by SpicyChat's Rulebooks feature.
 
-- **Meters** that store a score (bar, pips or number).
-- **Rules** that move a meter when keywords or a regex appear, conditions pass, or an optional AI condition matches.
-- **Events and milestones** that record named rule occurrences and meter threshold crossings.
-- **Influences** that give the character a status label and extra prompt text at different meter levels.
+## Features
 
-Meter values are injected into the prompt every turn so the character reacts to them.
+- **Meters**: Visual tracking of values (bar, pips, number types)
+- **Rules**: AI-driven conditions that modify meter values based on chat content
+- **Triggers**: Event-based actions for special story moments
+- **Levels & Status**: Threshold-based status messages and visual indicators
+- **Import/Export**: Share your runebook configurations with others
 
-## Install
+## Installation
 
-SillyTavern -> Extensions -> Install extension -> `https://github.com/FiretailStudios/Runebook`
+1. Open Silly Tavern's Extensions panel
+2. Click "Install Extension" → "Load from Git URL"
+3. Enter: `https://github.com/YOUR_USERNAME/runebook-extension`
+4. Download and load the extension JSON file
 
-Then open the **Runebook** drawer in the Extensions panel, add an example or import a `.json` file, and tick the rulebook to attach it to the current chat. Meters appear in a panel docked to the right or left of the chat (or floating); pick the dock and size in the drawer. Click a rulebook's title to minimize it. With 3+ rulebooks (or on narrow screens) they go compact automatically. Toggle the panel from the wand menu.
+Or install from the Silly Tavern extensions repository when added to their catalog.
 
-## Rulebook format
+## Usage Overview
 
+### Creating a Runebook
+
+1. Click the runebook icon in the chat toolbar or open the Extensions menu → "Runebooks"
+2. Create a new runebook with a name (e.g., "Affection Tracker", "Trust Meter")
+3. Add meters to track values you want to monitor
+4. Define rules that respond to specific chat patterns
+5. Set up triggers for special events
+
+### Example: Affection Tracker
+
+A simple runebook tracks how affection changes throughout your session:
+
+- **Meters**: 
+  - Affection (bar, 0-100%)
+  - Trust (pips, 0-5)
+
+- **Rules**:
+  - When AI says "love" → +15 Affection
+  - When AI says "hate" → -15 Affection
+  
+- **Triggers**:
+  - Secret revealed when trust is high → +2 Trust
+
+## Meter Types
+
+### Bar Meter
+Visual progress bar from min to max value. Great for percentages, health, affection, etc.
+
+Configuration:
 ```json
-{
-  "name": "Affection Tracker",
-  "meters": [
-    { "id": "affection", "name": "Affection", "type": "bar", "min": 0, "max": 100, "start": 30,
-      "decay": { "after": 6, "amount": -1 } }
-  ],
-  "rules": [
-    { "name": "Kind words", "meter": "affection", "keywords": ["love", "thank you"],
-      "on": "user", "change": 5, "frequency": "always", "cooldown": 2, "event": "kind_words" }
-  ],
-  "milestones": [
-    { "name": "Trusting", "meter": "affection", "at": 75, "direction": "up" }
-  ],
-  "influences": [
-    { "meter": "affection", "min": 0, "max": 24, "status": "Cold", "text": "{{char}} is distant." }
-  ]
-}
+{ "type": "bar", "startValue": 50, "min": 0, "max": 100 }
 ```
 
-| Field | Notes |
-|---|---|
-| meter `type` | `bar`, `pips`, `number` (default `bar`) |
-| meter `min`/`max`/`start` | defaults 0 / 100 / min. Values are clamped |
-| meter look (optional) | `icon` (emoji or `fa-solid fa-heart`), `color` (`#ff6b9d` or `red`), `style` (`bar` or `slider`, for bars), `pip` (`circle`, `heart`, `star`, `square`, for pips) |
-| meter `decay` | after N messages where the meter did not move, add `amount` |
-| rule `keywords` / `regex` | keywords match whole words, case-insensitive |
-| rule `change` / `set` | exactly one; a number or dice like `"1d6"`, `"-1d4"`, `"2d6+1"` |
-| rule `on` | `user`, `ai` or `both` (default) |
-| rule `frequency` | `always` (default) or `once_per_chat` |
-| rule `cooldown` | Optional number of subsequent non-system chat messages to wait before this rule can fire again |
-| rule `conditions` | Optional `all`, `any` and `not` arrays. All `all` checks must pass, at least one `any` check must pass when present, and no `not` check may pass. Each check is a text matcher (`keywords`/`regex`) or meter comparison (`meter`, `operator`, `value`); operators are `eq`, `neq`, `gt`, `gte`, `lt`, `lte`. Top-level keywords/regex retain their existing OR behavior and are also required when supplied with `conditions`. |
-| rule `event` | Optional name recorded in per-chat event counts and shown in change notes each time this rule fires |
-| rule `aiCondition` | Optional natural-language condition evaluated only when AI-assisted mode is enabled |
-| milestone `at` / `direction` | A meter threshold and crossing direction (`up`, `down` or `either`). Fires once per chat by default; set `repeat: true` to fire on every crossing. |
-| influence `min`/`max` | inclusive range, defaults to the meter's full range |
-| influence `status` / `text` / `description` | at least one. `status` and `description` show on screen; `text` is sent to the AI (`{{char}}`, `{{user}}` work) |
-| influence `color` | optional, overrides the meter color while in range |
+### Pip Meter
+Discrete indicator using filled circles (pips). Good for levels, ranks, or countable items.
 
-`meter` in rules and influences can be the meter's `id` or `name`.
+Configuration:
+```json
+{ "type": "pips", "startValue": 3, "min": 0, "max": 5 }
+```
 
-## How it works and what it costs
+### Number Meter
+Simple numeric display. Useful for scores, currency, temperatures, etc.
 
-- **No AI calls by default.** Deterministic rules use plain text and meter conditions on each new message. AI calls happen only when AI-assisted mode is enabled and an active rule has `aiCondition`.
-- **AI-assisted rules.** The AI returns IDs of matching configured rules; Runebook validates those IDs and applies only the rule's configured meter action. It does not accept AI-proposed meter changes. A selected Connection Profile is used through SillyTavern's profile-specific request service without activating/switching that profile. Without a selected profile, a configured custom OpenAI-compatible Chat Completions endpoint is used; if none is configured, Runebook uses the active SillyTavern connection. The active connection uses SillyTavern quiet generation and may include normal chat context. Custom endpoints need CORS; their API key is held in memory only and is not saved.
-- **Only new messages are read.** The greeting and earlier history are skipped unless you press **Rescan chat**.
-- **Prompt cost.** Each turn adds current meter values plus matching influence `text`, usually 30-150 tokens per rulebook. AI-assisted evaluation adds a separate request only for messages with active AI-conditioned rules. The drawer preview shows the injected prompt and estimate.
-- **Switches.** The master switch turns tracking and prompt injection off. Separate switches control the meters panel, change notes, prompt injection, and AI-assisted rule evaluation.
-- **Storage.** Rulebooks live in SillyTavern's settings; meter values live in each chat's metadata.
-- **Test panel.** Type a sample message in the drawer to see deterministic rule results and the resulting prompt, without changing anything. AI conditions are listed but not called from the test panel.
+Configuration:
+```json
+{ "type": "number", "startValue": 100, "decimalPlaces": 2 }
+```
 
-## Troubleshooting
+## Rules
 
-| Problem | Fix |
-|---|---|
-| Import says "references unknown meter" | A rule or influence `meter` must match a meter `id` or `name` |
-| A rule never fires | Keywords match whole words only (`hi` will not match `this`). Use the Test panel, or a `regex` for partial matches |
-| An AI condition never fires | Enable AI-assisted mode and configure a profile or fallback. Rescans and the test panel do not call AI. |
-| Meters did not move for old messages | Only new messages are read. Press **Rescan chat** |
-| Nothing shows on screen | Check the master switch, "Meters panel", and that the rulebook is ticked for this chat |
-| The AI ignores the meters | Make sure "Send meter info to the AI" is on and write clear influence `text` |
+Rules evaluate chat messages and modify meters when conditions are met.
 
-## Generate rulebooks with any AI
+### Condition Types
 
-Paste this into an AI chat, then paste the JSON into the in-app editor or import it:
+- **Text matching**: Check if message contains specific words/phrases
+- **Regex patterns**: Use regular expressions for flexible matching
+- **Semantic detection**: Advanced NLP-based condition checking (future)
 
-> Write a Runebook rulebook as JSON for: (describe your tracker). Use this format: `{"name","meters":[{"id","name","type":"bar|pips|number","min","max","start"}],"rules":[{"id","name","meter","keywords":[],"on":"user|ai|both","change":number or dice like "1d6","frequency":"always|once_per_chat","cooldown":number,"event":"event_id","conditions":{"all":[{"meter":"meter_id","operator":"gte","value":3}],"not":[{"keywords":["..."]}]},"aiCondition":"natural-language condition"}],"milestones":[{"name","meter","at","direction":"up|down|either"}],"influences":[{"meter","min","max","status","text","description"}]}`. Keywords match whole words. Output only valid JSON.
+### Actions
 
-## Making your own
+- `modify_meter`: Add/subtract from a meter's value
+- `set_meter`: Set a meter to a specific value
+- `show_status`: Display status message in chat or UI
+- `play_sound`: Trigger audio feedback
 
-Use the **in-app rulebook editor** to create or edit a rulebook as JSON; Validate before saving. You can also add the **blank template** from the example list, edit it in the editor, or import/export `.json` files. The template includes `_help` notes; keys starting with `_` are ignored.
+## Triggers
 
-## Notes
+Triggers are event-based actions that respond to specific conditions, often acting more immediately than rules.
 
-- Rules run on each new message only. The greeting and earlier history are not scanned when you attach a rulebook; use **Rescan chat** to replay the whole chat. AI conditions are not replayed; rescan does not make AI calls. Swiping or deleting does not undo changes, so use Rescan (dice rules re-roll) or Reset meters.
-- Deterministic tracking costs no AI calls. Each turn adds the current values and any matching influence `text` to the prompt (about 30-150 tokens per rulebook). AI-assisted mode makes separate calls only for active AI-conditioned rules.
-- Custom API keys are session-only. Connection Profile selection does not switch SillyTavern's active connection.
+## Color Coding
 
-## Development
+Meters use color to indicate current state:
+- **Green/Blue**: Healthy range (75-100% or above threshold)
+- **Yellow**: Warning zone (25-74%)
+- **Red**: Critical/danger zone (< 25%)
 
-`engine.js` is pure logic with tests: `node --test tests/engine.test.mjs`. `index.js` is the SillyTavern UI layer.
+## Tips & Best Practices
+
+- Start with a simple runebook before adding complexity
+- Test your rules with sample messages
+- Use meaningful names for meters and rules
+- Combine multiple meter conditions in advanced rules
+- Export successful configurations to share with others
+
+## Future Enhancements
+
+- Advanced expression parser for complex conditions
+- AI-generated rulebooks from chat descriptions
+- Shared library of popular runebook templates
+- Mobile-responsive UI design
+- Notification system for meter changes
+- Integration with image generation based on meter states
+
+## Contributing
+
+This extension is open-source. Feel free to:
+- Report bugs or suggest improvements
+- Create new feature requests
+- Share your custom runebooks and rule sets
+- Contribute code to the GitHub repository
+
+## Credits
+
+Inspired by [SpicyChat's Rulebooks](https://spicychat.ai) feature, which pioneered meter-based RP tracking. Special thanks to Silly Tavern developers for their excellent extension system architecture.
+
+## License
+
+MIT License - feel free to use and modify as you see fit.

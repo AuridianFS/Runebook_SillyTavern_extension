@@ -1,11 +1,10 @@
 {
-    "display_name": "Runebook",
-    "loading_order": 50,
-    "requires": [],
-    "optional": [],
-    "js": "index.js",
-    "css": "style.css",
-    "author": "FiretailStudios",
-    "version": "2.3.0",
-    "homePage": "https://github.com/FiretailStudios/Runebook"
+  "name": "Runebook",
+  "version": "1.0.0",
+  "description": "Track conditions and elements from RP/ERP with meters, rules, and triggers - inspired by SpicyChat Rulebooks",
+  "author": "Developer",
+  "homepage": "https://github.com/YOUR_USERNAME/runebook-extension",
+  "sillytavern_version": ">=4.0.0",
+  "entry_point": "src/main.js",
+  "icon": "src/assets/icon.png"
 }
