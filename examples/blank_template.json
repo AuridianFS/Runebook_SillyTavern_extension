@@ -1,0 +1,43 @@
+{
+  "_help": "Copy this file, rename it, and edit. Keys starting with _ are ignored. Delete any rule/influence you don't need. Import it from the Runebook drawer.",
+  "name": "My Tracker",
+  "meters": [
+    {
+      "_help": "type: bar | pips | number. min/max/start are optional. decay: after N messages with no change, add amount.",
+      "id": "mood",
+      "name": "Mood",
+      "type": "bar",
+      "min": 0,
+      "max": 100,
+      "start": 50,
+      "decay": { "after": 8, "amount": -1 }
+    },
+    { "id": "trust", "name": "Trust", "type": "pips", "min": 0, "max": 5, "start": 1 },
+    { "id": "gold", "name": "Gold", "type": "number", "min": 0, "start": 10 }
+  ],
+  "rules": [
+    {
+      "_help": "Use keywords (whole words, any match) and/or regex. Use exactly one of change or set; each can be a number or dice like 1d6, -1d4, 2d6+1. on: user | ai | both. frequency: always | once_per_chat.",
+      "name": "Kind words",
+      "meter": "mood",
+      "keywords": ["thank you", "great job"],
+      "on": "user",
+      "change": 5,
+      "frequency": "always"
+    },
+    { "name": "First promise", "meter": "trust", "keywords": ["promise"], "change": 1, "frequency": "once_per_chat" },
+    { "name": "Loot", "meter": "gold", "regex": "\\bfinds? (a )?(coin|purse)\\b", "on": "ai", "change": "1d6" },
+    { "name": "Reset on argument", "meter": "mood", "keywords": ["shut up"], "set": 10 }
+  ],
+  "influences": [
+    {
+      "_help": "min/max are inclusive and default to the meter's full range. Give a status, text, or both. {{char}} and {{user}} work in text.",
+      "meter": "mood",
+      "min": 0,
+      "max": 30,
+      "status": "Upset",
+      "text": "{{char}} is irritable and short with {{user}}."
+    },
+    { "meter": "mood", "min": 71, "max": 100, "status": "Cheerful", "text": "{{char}} is upbeat and talkative." }
+  ]
+}

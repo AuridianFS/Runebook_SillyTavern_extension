@@ -9,7 +9,7 @@ import {
 
 const MODULE = 'runebook';
 const PROMPT_KEY = 'runebook_prompt';
-const EXAMPLES = ['affection_tracker', 'wallet_tracker', 'dice_game'];
+const EXAMPLES = ['blank_template', 'affection_tracker', 'wallet_tracker', 'dice_game'];
 const DEFAULTS = { enabled: true, hud: true, rulebooks: [] };
 
 const ctx = () => SillyTavern.getContext();

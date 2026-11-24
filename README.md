@@ -47,6 +47,10 @@ Then open the **Runebook** drawer in the Extensions panel, add an example or imp
 
 `meter` in rules and influences can be the meter's `id` or `name`.
 
+## Making your own
+
+Add **blank template** from the drawer's example list (or copy `examples/blank_template.json`), edit it, and import it. It has one of every meter and rule type with `_help` notes. Keys starting with `_` are ignored.
+
 ## Notes
 
 - Rules run on each new message. Swiping or deleting a message does not undo meter changes; use "Reset this chat's meters".
