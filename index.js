@@ -90,6 +90,13 @@ let messageQueue = Promise.resolve();
 const processedMessages = new Set();
 let fallbackApiKey = '';
 let activeAiController = null;
+let lastAiError = { message: '', at: 0 };
+
+const AI_SYSTEM = [
+    'You are a strict JSON classifier for a roleplay tracker. You are NOT a character and you never roleplay or continue the story.',
+    'You read one message and decide which listed rule conditions it satisfies.',
+    'Reply with ONLY a JSON object, no prose, no markdown.',
+].join(' ');
 
 function aiEvaluationPrompt(entries, text, source) {
     const books = entries.map(({ rb, state }) => ({
@@ -124,6 +131,7 @@ function customChatEndpoint(baseUrl) {
 }
 
 async function generateAiDecision(prompt, signal) {
+    const system = AI_SYSTEM;
     const c = ctx();
     const profileId = settings().aiProfileId;
     if (profileId) {
@@ -138,9 +146,9 @@ async function generateAiDecision(prompt, signal) {
         // Use the profile request service directly; applying the profile would change global connection state.
         const result = await service.sendRequest(
             profileId,
-            [{ role: 'user', content: prompt }],
+            [{ role: 'system', content: AI_SYSTEM }, { role: 'user', content: prompt }],
             512,
-            { extractData: true, includePreset: true, stream: false, signal },
+            { extractData: true, includePreset: false, stream: false, signal },
         );
         const content = typeof result === 'string' ? result : result?.content;
         if (typeof content !== 'string' || !content.trim()) throw new Error('The selected profile returned an empty response');
@@ -160,7 +168,7 @@ async function generateAiDecision(prompt, signal) {
             },
             body: JSON.stringify({
                 model,
-                messages: [{ role: 'user', content: prompt }],
+                messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }],
                 temperature: 0,
                 max_tokens: 512,
             }),
@@ -173,10 +181,26 @@ async function generateAiDecision(prompt, signal) {
         return content;
     }
 
-    if (typeof c.generateQuietPrompt !== 'function') {
-        throw new Error('SillyTavern does not expose its active-connection generation API');
+    // generateRaw sends only our prompt (no character card, no chat history, no roleplay
+    // instructions). generateQuietPrompt was removed: it runs inside the real chat context, so
+    // the model answered in character instead of returning JSON.
+    if (typeof c.generateRaw !== 'function') {
+        throw new Error('This SillyTavern version cannot run AI-assisted mode on the active connection. Pick a Connection Profile instead');
     }
-    return c.generateQuietPrompt({ quietPrompt: prompt, responseLength: 512, skipWIAN: true });
+    const out = await c.generateRaw({ systemPrompt: system, prompt, responseLength: 512 });
+    return typeof out === 'string' ? out : JSON.stringify(out ?? {});
+}
+
+/** Pull a JSON object out of a model reply, tolerating code fences and extra chatter. */
+function parseAiJson(text) {
+    const clean = String(text ?? '').replace(/```(?:json)?/gi, '').trim();
+    const attempt = (v) => { try { return JSON.parse(v); } catch { return undefined; } };
+    let data = attempt(clean);
+    if (data === undefined) {
+        const m = clean.match(/\{[\s\S]*\}/);
+        if (m) data = attempt(m[0]);
+    }
+    return data;
 }
 
 async function evaluateAiMatches(entries, text, source, signal) {
@@ -184,24 +208,44 @@ async function evaluateAiMatches(entries, text, source, signal) {
     const candidates = relevantEntries.flatMap((entry) => aiRulesForMessage(entry, source).map((rule) => ({ rb: entry.rb, rule })));
     if (!candidates.length) return {};
     const result = await generateAiDecision(aiEvaluationPrompt(relevantEntries, text, source), signal);
-    let parsed;
-    try { parsed = JSON.parse(result); } catch { throw new Error('AI response was not valid JSON'); }
+    const parsed = parseAiJson(result);
     if (!parsed || typeof parsed !== 'object' || !parsed.matches || typeof parsed.matches !== 'object') {
-        throw new Error('AI response must contain a "matches" object');
+        throw new Error('the model did not return the expected JSON (use "Test AI connection" to see what it sent)');
     }
 
+    // Be forgiving: a missing rulebook means "no matches", and unknown ids are ignored.
     const matches = {};
     for (const entry of relevantEntries) {
         const { rb } = entry;
         const candidateIds = new Set(aiRulesForMessage(entry, source).map((rule) => rule.id));
-        if (!Object.hasOwn(parsed.matches, rb.id)) throw new Error(`AI response omitted rulebook "${rb.name}"`);
-        const selected = parsed.matches[rb.id];
-        if (!Array.isArray(selected) || selected.some((id) => typeof id !== 'string' || !candidateIds.has(id))) {
-            throw new Error(`AI returned invalid rule ids for "${rb.name}"`);
-        }
-        matches[rb.id] = selected;
+        const selected = Array.isArray(parsed.matches[rb.id]) ? parsed.matches[rb.id] : [];
+        matches[rb.id] = selected.filter((id) => typeof id === 'string' && candidateIds.has(id));
     }
     return matches;
+}
+
+async function testAiConnection() {
+    const out = $id('runebook_ai_result');
+    out.textContent = 'Sending a test prompt (nothing is added to the chat)...';
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30000);
+    const prompt = [
+        'Evaluate whether the supplied message satisfies each listed natural-language rule condition.',
+        'Return only a JSON object in this shape: {"matches":{"rulebook-id":["rule-id"]}}.',
+        'Message author: user',
+        'Rulebooks: [{"id":"example","rules":[{"id":"greets","condition":"the user greets someone"}]}]',
+        'Message: "Hello there!"',
+    ].join('\n');
+    try {
+        const reply = await generateAiDecision(prompt, controller.signal);
+        const parsed = parseAiJson(reply);
+        out.textContent = `Raw reply:\n${String(reply).trim() || '(empty)'}\n\n`
+            + (parsed?.matches ? 'Understood: yes. The connection works for AI rules.' : 'Understood: NO. The model did not return the expected JSON. Try a more instruction-following model or profile.');
+    } catch (e) {
+        out.textContent = `Failed: ${errorMessage(e)}`;
+    } finally {
+        clearTimeout(timer);
+    }
 }
 
 async function processMessage(snapshot) {
@@ -218,7 +262,11 @@ async function processMessage(snapshot) {
         } catch (e) {
             if (snapshot.epoch === chatEpoch && settings().aiAssist) {
                 const message = controller.signal.aborted ? 'AI-assisted evaluation was cancelled or timed out' : errorMessage(e);
-                toast('error', `AI-assisted evaluation failed: ${message}`);
+                const now = Date.now();
+                if (message !== lastAiError.message || now - lastAiError.at > 60000) {
+                    lastAiError = { message, at: now };
+                    toast('error', `AI-assisted evaluation failed: ${message}. Keyword rules still ran.`);
+                }
             }
         } finally {
             clearTimeout(timeout);
@@ -261,10 +309,11 @@ function onMessage(id) {
         source: msg.is_user ? 'user' : 'ai',
         epoch: chatEpoch,
     };
+    // Do NOT return this promise: SillyTavern awaits event handlers, so returning it would
+    // hold up sending/receiving messages until the AI judge finishes.
     messageQueue = messageQueue.then(() => processMessage(snapshot)).catch((e) => {
         toast('error', `Message processing failed: ${errorMessage(e)}`);
     });
-    return messageQueue;
 }
 
 function onChatChanged() {
@@ -608,7 +657,9 @@ function buildDrawer() {
             <label>API key (kept in memory only)
                 <input id="runebook_ai_key" class="text_pole" type="password" autocomplete="off">
             </label>
-            <small>Custom API calls require CORS support. The key is not saved and must be re-entered after reload. AI evaluation sends the message, rule conditions and relevant meter values. The active SillyTavern connection may also include its normal chat context.</small>
+            <div class="menu_button" id="runebook_ai_test" title="Sends a tiny sample prompt through the chosen connection. Nothing is added to the chat.">Test AI connection</div>
+            <pre id="runebook_ai_result" class="rb-pre"></pre>
+            <small>Custom API calls require CORS support. The key is not saved and must be re-entered after reload. AI evaluation sends the message, rule conditions and relevant meter values. With no profile or custom API, the active SillyTavern connection is used, but only with Runebook's own prompt (no character card or chat history).</small>
             <div class="flex-container">
                 <label>Dock <select id="runebook_dock" class="text_pole">
                     <option value="right">Right of chat</option><option value="left">Left of chat</option><option value="float">Floating top right</option>
@@ -725,6 +776,7 @@ function bindDrawer() {
         }
         save();
     });
+    $id('runebook_ai_test').addEventListener('click', testAiConnection);
     $id('runebook_ai_key').addEventListener('input', (e) => { fallbackApiKey = e.target.value; });
     $id('runebook_test_run').addEventListener('click', runTest);
     $id('runebook_reset').addEventListener('click', resetChat);

@@ -1,21 +1,5 @@
-# Security Policy
+# Security
 
-## Supported Versions
+Runebook runs entirely in your browser inside SillyTavern. It stores rulebooks in SillyTavern's extension settings and meter values in each chat's metadata. It never saves API keys: the optional custom fallback API key is kept in memory only.
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
-
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
-
-## Reporting a Vulnerability
-
-Use this section to tell people how to report a vulnerability.
-
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+To report a security issue, open a private security advisory on the GitHub repository (Security tab) rather than a public issue.

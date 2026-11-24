@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.1
+- Fixed AI-assisted mode taking over the chat: event handlers no longer block SillyTavern, the active-connection path uses a raw request (no character card or chat history) instead of a quiet chat generation, and requests include a strict JSON-classifier system prompt.
+- AI replies are parsed leniently (code fences and extra text are tolerated) and repeated errors are throttled.
+- Added a Test AI connection button that shows the raw reply without touching the chat.
+- Replaced the placeholder SECURITY.md.
+
 ## 2.3.0
 - Added named rule events, threshold-crossing milestones, message-count cooldowns, and AND/OR/NOT text and meter conditions.
 - Added AI-conditioned rules with opt-in evaluation, non-switching SillyTavern Connection Profile requests, active-connection fallback, and optional OpenAI-compatible fallback.

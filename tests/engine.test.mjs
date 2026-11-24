@@ -218,7 +218,8 @@ test('AI-conditioned rules require an explicit match result', () => {
 test('manifest is valid and points at real files', () => {
     const m = JSON.parse(readFileSync(new URL('../manifest.json', import.meta.url), 'utf8'));
     for (const key of ['display_name', 'js', 'css', 'version']) assert.ok(m[key], `manifest.${key}`);
-    assert.equal(m.version, '2.3.0');
+    const top = /^## (\S+)/m.exec(readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf8'))[1];
+    assert.equal(m.version, top, 'manifest version matches newest CHANGELOG entry');
     readFileSync(new URL(`../${m.js}`, import.meta.url));
     readFileSync(new URL(`../${m.css}`, import.meta.url));
 });
