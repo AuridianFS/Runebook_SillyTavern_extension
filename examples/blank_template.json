@@ -1,5 +1,5 @@
 {
-  "_help": "Copy this file, rename it, and edit. Keys starting with _ are ignored. Delete any meter, rule, milestone or influence you don't need. Import it from the Runebook drawer or edit it in the in-app JSON editor.",
+  "_help": "Copy this file, rename it, and edit. Keys starting with _ are ignored. Delete any rule/influence you don't need. Import it from the Runebook drawer.",
   "name": "My Tracker",
   "meters": [
     {
@@ -39,7 +39,7 @@
   ],
   "rules": [
     {
-      "_help": "Use keywords (whole words, any match) and/or regex. conditions supports all/any/not arrays of text or meter comparisons. cooldown is the number of subsequent non-system chat messages. event is an optional event name. aiCondition is optional and requires AI-assisted mode. Use exactly one of change or set.",
+      "_help": "Use keywords (whole words, any match) and/or regex. Use exactly one of change or set; each can be a number or dice like 1d6, -1d4, 2d6+1. on: user | ai | both. frequency: always | once_per_chat.",
       "name": "Kind words",
       "meter": "mood",
       "keywords": [
@@ -48,9 +48,7 @@
       ],
       "on": "user",
       "change": 5,
-      "frequency": "always",
-      "cooldown": 2,
-      "event": "kind_words"
+      "frequency": "always"
     },
     {
       "name": "First promise",
@@ -60,26 +58,6 @@
       ],
       "change": 1,
       "frequency": "once_per_chat"
-    },
-    {
-      "name": "Trusting gift",
-      "meter": "trust",
-      "keywords": ["gift"],
-      "conditions": {
-        "all": [
-          { "meter": "trust", "operator": "gte", "value": 2 }
-        ],
-        "not": [
-          { "keywords": ["fake"] }
-        ]
-      },
-      "change": 1
-    },
-    {
-      "name": "Sincere apology",
-      "meter": "mood",
-      "aiCondition": "The message contains a sincere apology, not merely the word 'sorry'.",
-      "change": 5
     },
     {
       "name": "Loot",
@@ -95,16 +73,6 @@
         "shut up"
       ],
       "set": 10
-    }
-  ],
-  "milestones": [
-    {
-      "_help": "Fires when a meter crosses at. direction: up, down, or either. One fire per chat by default; set repeat to true to fire on every crossing.",
-      "id": "mood_high",
-      "name": "Mood high",
-      "meter": "mood",
-      "at": 70,
-      "direction": "up"
     }
   ],
   "influences": [

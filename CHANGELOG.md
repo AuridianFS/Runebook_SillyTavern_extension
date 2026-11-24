@@ -1,10 +1,5 @@
 # Changelog
 
-## 2.3.0
-- Added named rule events, threshold-crossing milestones, message-count cooldowns, and AND/OR/NOT text and meter conditions.
-- Added AI-conditioned rules with opt-in evaluation, non-switching SillyTavern Connection Profile requests, active-connection fallback, and optional OpenAI-compatible fallback.
-- Added an in-app JSON rulebook editor with validation.
-
 ## 2.2.0
 - Master switch plus separate switches for the meters panel, change notes and prompt injection.
 - Drawer info boxes and tooltips; README sections on cost, troubleshooting and generating rulebooks with an AI.
