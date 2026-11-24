@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Runebook Extension Diagnostic</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; background: #f5f5f5; }
+        .test-section { background: white; border-radius: 8px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #7c4dff; margin-top: 0; }
+        h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+        .test-item { margin: 10px 0; }
+        .label { font-weight: bold; display: block; margin-bottom: 5px; }
+        .result-pass { color: #4caf50; font-weight: bold; }
+        .result-fail { color: #f44336; font-weight: bold; }
+        .result-pending { color: #ff9800; font-weight: bold; }
+        button { background: #7c4dff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #632ddb; }
+    </style>
+</head>
+<body>
+    <h1>Runebook Extension - Diagnostic Test Page</h1>
+    <p>This page tests whether your browser can load the extension files and identifies potential issues.</p>
+
+    <div class="test-section">
+        <h2>Test 1: GitHub Repository Access (For Installation Testing)</h2>
+        <button onclick="testGitHubAccess()">Test GitHub Loading</button>
+        <div id="github-result"></div>
+        <p><strong>Note:</strong> If you're installing from GitHub URL in Silly Tavern, this test confirms the server is accessible.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: manifest.json Loads Correctly</h2>
+        <button onclick="testManifestLoad()">Load manifest.json</button>
+        <div id="manifest-result"></div>
+        <p>This test verifies the extension manifest loads without errors.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: JS File Loads Without Errors</h2>
+        <button onclick="testJSLoad()">Load main.js (ES Module)</button>
+        <div id="js-result"></div>
+        <p>This test verifies the extension JavaScript loads without syntax errors.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>Silly Tavern Symptom Checker</h2>
+        <button onclick="toggleSymptomChecker()">Toggle Form</button>
+        
+        <form id="symptom-form" style="display: none;">
+            <p><strong>AFTER installing from GitHub URL in Silly Tavern, check what you see:</strong></p>
+            
+            <div class="test-item">
+                <label class="result-pass">Extension appears in Extensions list</label>
+                <input type="checkbox" value="symptom-list">
+            </div>
+            <div class="test-item">
+                <label>Settings drawer visible when clicked</label>
+                <input type="checkbox" value="symptom-settings">
+            </div>
+            <div class="test-item">
+                <label>📊 toolbar button appears in chat window</label>
+                <input type="checkbox" value="symptom-toolbar">
+            </div>
+            <div class="test-item">
+                <label>Manager panel opens when button clicked</label>
+                <input type="checkbox" value="symptom-panel">
+            </div>
+
+            <hr/>
+            <button onclick="checkSymptoms()">Analyze Symptoms</button>
+        </form>
+
+        <h3 id="status-badge" class="result-fail">Click "Analyze Symptoms" to see results</h3>
+    </div>
+
+    <footer style="margin-top: 30px; color: #666; font-size: 12px;">
+        Repository: <a href="https://github.com/FiretailStudios/Runebook">https://github.com/FiretailStudios/Runebook</a><br/>
+        Test page for troubleshooting Silly Tavern extension installation issues.
+    </footer>
+
+    <script>
+        // Test GitHub access (for verifying server availability when installing via URL)
+        async function testGitHubAccess() {
+            try {
+                const response = await fetch('https://raw.githubusercontent.com/FiretailStudios/Runebook/main/manifest.json');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                document.getElementById('github-result').innerHTML = 
+                    '<span class="result-pass">✓ GitHub repository is accessible</span>';
+            } catch (e) {
+                document.getElementById('github-result').innerHTML = 
+                    `<span class="result-fail">✗ Failed: ${e.message}</span>`;
+            }
+        }
+
+        // Test manifest.json loads correctly
+        async function testManifestLoad() {
+            try {
+                const response = await fetch('./manifest.json');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                let data = JSON.parse(response.text());
+                console.log('manifest.json loaded:', data);
+                
+                // Validate required fields
+                let valid = true;
+                let issues = [];
+
+                if (!data.display_name) { issues.push("missing display_name"); valid = false; }
+                if (!data.js) { issues.push("missing js field"); valid = false; }
+                if (typeof data.hooks !== 'object') { issues.push("hooks not an object"); valid = false; }
+
+                document.getElementById('manifest-result').innerHTML = 
+                    '<span class="result-pass">✓ manifest.json loaded successfully</span><br/>' +
+                    `Version: ${data.version}<br/>` +
+                    `Display Name: ${data.display_name}<br/>` +
+                    `JS: ${data.js}<br/>` +
+                    `Hooks: ${JSON.stringify(data.hooks)}`;
+
+                if (issues.length > 0) {
+                    document.getElementById('manifest-result').innerHTML += 
+                        `<span class="result-fail">⚠️ Issues: ${issues.join(', ')}</span>`;
+                }
+            } catch (e) {
+                document.getElementById('manifest-result').innerHTML = 
+                    '<span class="result-fail">✗ Failed to load manifest.json</span><br/>' + e.message;
+            }
+        }
+
+        // Test JS file loads without errors
+        async function testJSLoad() {
+            try {
+                const response = await fetch('./src/main.js');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                let text = response.text();
+                console.log('main.js loaded, length:', text.length);
+
+                // Check for key patterns that should exist
+                let hasOnEnable = text.includes('onEnable');
+                let hasOpenRunebookPanel = text.includes('openRunebookPanel');
+                let hasToolbarButton = text.includes('chat-toolbar');
+                let hasSettingsDrawer = text.includes('extensions_settings2');
+
+                document.getElementById('js-result').innerHTML = 
+                    '<span class="result-pass">✓ main.js loaded successfully</span><br/>' +
+                    `Length: ${text.length} characters<br/><br/>` +
+                    '<table border="1" cellpadding="4">' +
+                    `<tr><th>Pattern</th><th>Found?</th></tr>` +
+                    `<tr><td>onEnable method</td>${hasOnEnable ? '<td class="result-pass">✓</td>' : '<td class="result-fail">✗</td>'}</tr>` +
+                    `<tr><td>openRunebookPanel hook</td>${hasOpenRunebookPanel ? '<td class="result-pass">✓</td>' : '<td class="result-fail">✗</td>'}</tr>` +
+                    `<tr><td>chat-toolbar registration</td>${hasToolbarButton ? '<td class="result-pass">✓</td>' : '<td class="result-fail">✗</td>'}</tr>` +
+                    `<tr><td>settings drawer HTML</td>${hasSettingsDrawer ? '<td class="result-pass">✓</td>' : '<td class="result-fail">✗</td>'}</tr></table>`;
+
+            } catch (e) {
+                document.getElementById('js-result').innerHTML = 
+                    '<span class="result-fail">✗ Failed to load main.js</span><br/>' + e.message;
+            }
+        }
+
+        // Symptom checker - user fills this in manually
+        let showSymptoms = false;
+        function toggleSymptomChecker() {
+            if (!showSymptoms) {
+                document.getElementById('symptom-form').style.display = 'block';
+                showSymptoms = true;
+            } else {
+                document.getElementById('symptom-form').style.display = 'none';
+                showSymptoms = false;
+            }
+        }
+
+        function checkSymptoms() {
+            let symptoms = [
+                { id: 'symptom-list', has: false },
+                { id: 'symptom-settings', has: false },
+                { id: 'symptom-toolbar', has: false },
+                { id: 'symptom-panel', has: false }
+            ];
+
+            let checkboxes = document.querySelectorAll('#symptom-form input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                let sym = symptoms.find(s => s.id === cb.value);
+                if (sym) sym.has = cb.checked;
+            });
+
+            let totalSymptoms = 0;
+            let symptomCount = 0;
+            symptoms.forEach(sym => {
+                if (!sym.has) return;
+                totalSymptoms++;
+                
+                switch(sym.id) {
+                    case 'symptom-list':
+                        symptomCount++; break;
+                    case 'symptom-settings':
+                        symptomCount++; break;
+                    case 'symptom-toolbar':
+                        symptomCount++; break;
+                    case 'symptom-panel':
+                        symptomCount++; break;
+                }
+            });
+
+            document.getElementById('status-badge').className = totalSymptoms > 0 ? (symptomCount === totalSymptoms ? 'result-pass' : 'result-fail') : 'result-pending';
+            
+            let statusText = totalSymptoms === 4 && symptomCount === 4 
+                ? '✓ Extension fully loaded!' 
+                : `⚠️ ${totalSymptoms - symptomCount}/${totalSymptoms} components missing`;
+            
+            document.getElementById('status-badge').textContent = statusText;
+        }
+
+        // Show/hide symptom checker form on load
+        toggleSymptomChecker();
+    </script>
+</body>
+</html>

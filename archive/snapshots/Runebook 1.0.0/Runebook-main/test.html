@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Runebook Extension Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1e1e2f; color: white; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #2d5a27; }
+        .error { background: #5a2727; }
+        pre { background: #111; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Runebook Extension Test Page</h1>
+    <div id="results"></div>
+
+    <!-- Import extension module -->
+    <script type="module">
+        import RunebookExtension from "./src/main.js";
+
+        let resultsDiv = document.getElementById("results");
+
+        function addResult(title, success, message) {
+            let div = document.createElement("div");
+            div.className = "result " + (success ? "success" : "error");
+            div.innerHTML = "<strong>" + title + "</strong><br>" + message;
+            resultsDiv.appendChild(div);
+        }
+
+        try {
+            // Test 1: Module imports successfully
+            addResult("Module import", true, "ES module loaded from ./src/main.js");
+
+            // Test 2: Extension class exists and is callable
+            let ext = new RunebookExtension();
+            addResult("Instance creation", true, "new RunebookExtension() succeeded");
+
+            // Test 3: onEnable method exists
+            if (typeof ext.onEnable === "function") {
+                addResult("onEnable method", true, "Function exists");
+            } else {
+                addResult("onEnable method", false, "Method not found - typeof: " + typeof ext.onEnable);
+            }
+
+            // Test 4: Check for syntax errors in imported module
+            if (!ext.onEnable) {
+                addResult("Module content", false, "onEnable is undefined - module may have syntax error");
+            }
+
+        } catch (e) {
+            let div = document.createElement("div");
+            div.className = "result error";
+            div.innerHTML = "<strong>Import Error</strong><br>" + e.message + "<br>" + e.stack;
+            resultsDiv.appendChild(div);
+            addResult("Module import", false, e.message);
+        }
+
+        console.log("[Test Page] Results displayed in page");
+    </script>
+</body>
+</html>

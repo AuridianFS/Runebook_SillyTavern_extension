@@ -1,0 +1,17 @@
+{
+  "display_name": "Runebook",
+  "loading_order": 500,
+  "author": "FiretailStudios",
+  "version": "1.0.3",
+  "js": "src/main.js",
+  "css": "src/styles.css",
+  "settings_html": "src/settings.html",
+  "icon": "./src/assets/icon.png",
+  "homePage": "https://github.com/FiretailStudios/Runebook",
+  "description": "Track RP/ERP conditions with meters, rules, and triggers - inspired by SpicyChat Rulebooks",
+  "hooks": {
+    "enable": "onEnable",
+    "disable": "onDisable",
+    "open": "openRunebookPanel"
+  }
+}

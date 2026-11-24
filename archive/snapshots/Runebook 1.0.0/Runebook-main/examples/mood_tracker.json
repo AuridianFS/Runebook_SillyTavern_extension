@@ -1,0 +1,180 @@
+{
+  "name": "Mood Tracker",
+  "description": "Track character mood and energy levels that influence each other",
+  "meters": [
+    {
+      "id": "meter_mood",
+      "name": "Mood",
+      "type": "bar",
+      "startValue": 50,
+      "min": 0,
+      "max: 100
+    },
+    {
+      "id": "meter_energy",
+      "name": "Energy",
+      "type": "pips",
+      "startValue": 3,
+      "min": 0,
+      "max": 5
+    },
+    {
+      "id": "meter_hunger",
+      "name": "Hunger",
+      "type": "bar",
+      "startValue": 20,
+      "min": 0,
+      "max": 100
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule_good_food",
+      "name": "Good food boosts mood and energy",
+      "condition": {
+        "type": "contains_any",
+        "words": ["delicious", "tasty", "yum", "scrumptious"]
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_mood",
+        "change": 10,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "rule_bad_food",
+      "name": "Bad food makes you sick",
+      "condition": {
+        "type": "contains_any",
+        "words": ["disgusting", "yucky", "sick"]
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_mood",
+        "change": -15,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "rule_tired",
+      "name": "Low energy affects mood",
+      "condition": {
+        "type": "meter_below",
+        "meterId": "meter_energy",
+        "threshold": 2.0
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_mood",
+        "change": -5,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "rule_excited_activity",
+      "name": "Exciting activities boost energy",
+      "condition": {
+        "type": "contains_any",
+        "words": ["adventure", "game", "party", "fun"]
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_energy",
+        "change": 1,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "rule_hungry_mood_down",
+      "name": "Hunger makes mood worse",
+      "condition": {
+        "type": "meter_above",
+        "meterId": "meter_hunger",
+        "threshold": 80.0
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_mood",
+        "change": -10,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "rule_fed_hunger_down",
+      "name": "Being fed reduces hunger",
+      "condition": {
+        "type": "contains_any",
+        "words": ["fed", "ate a meal", "lunch", "dinner"]
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_hunger",
+        "change": -30,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "rule_show_combined_status",
+      "name": "Show low energy/mood status",
+      "condition": {
+        "type": "combined",
+        "conditions": [
+          { "meterId": "meter_energy", "operator": "below", "threshold": 1.0 },
+          { "meterId": "meter_mood", "operator": "below", "threshold": 30.0 }
+        ]
+      },
+      "action": {
+        "type": "show_status",
+        "status": "{{char}} is exhausted and feeling down.",
+        "frequency": "once_per_chat"
+      }
+    }
+  ],
+  "triggers": [
+    {
+      "id": "trigger_energy_depleted",
+      "name": "Energy runs out completely",
+      "condition": {
+        "type": "meter_exact",
+        "meterId": "meter_energy",
+        "value": 0.0
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_hunger",
+        "change": 15,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "trigger_mood_recovery",
+      "name": "Mood recovers from low",
+      "condition": {
+        "type": "meter_above",
+        "meterId": "meter_mood",
+        "threshold": 70.0
+      },
+      "action": {
+        "type": "set_meter",
+        "meterId": "meter_energy",
+        "value": 4,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "trigger_extreme_hunger",
+      "name": "Extreme hunger crisis",
+      "condition": {
+        "type": "meter_above",
+        "meterId": "meter_hunger",
+        "threshold": 95.0
+      },
+      "action": {
+        "type": "show_status",
+        "status": "{{char}} is starving! Immediate food required!",
+        "frequency": "once_per_chat"
+      }
+    }
+  ]
+}

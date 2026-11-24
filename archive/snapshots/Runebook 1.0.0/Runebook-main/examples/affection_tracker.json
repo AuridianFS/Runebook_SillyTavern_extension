@@ -1,0 +1,95 @@
+{
+  "name": "Affection Tracker",
+  "meters": [
+    {
+      "id": "meter_affection",
+      "name": "Affection",
+      "type": "bar",
+      "startValue": 30,
+      "min": 0,
+      "max": 100
+    },
+    {
+      "id": "meter_trust",
+      "name": "Trust",
+      "type": "pips",
+      "startValue": 2,
+      "min": 0,
+      "max": 5
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule_positive_interaction",
+      "name": "Positive interaction",
+      "condition": {
+        "type": "contains_any",
+        "words": ["love", "care", "affectionate"]
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_affection",
+        "change": 15,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "rule_negative_interaction",
+      "name": "Negative interaction",
+      "condition": {
+        "type": "contains_any",
+        "words": ["hate", "disgust", "annoying"]
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_affection",
+        "change": -15,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "rule_neutral_interaction",
+      "name": "Neutral interaction",
+      "condition": {
+        "type": "contains_any",
+        "words": ["hello", "hi", "good"]
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_affection",
+        "change": 2,
+        "frequency": "always"
+      }
+    }
+  ],
+  "triggers": [
+    {
+      "id": "trigger_secret_revelation",
+      "name": "Secret revealed",
+      "condition": {
+        "type": "contains_any",
+        "words": ["secret", "trust"]
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_trust",
+        "change": 1,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "trigger_betrayal",
+      "name": "Betrayal detected",
+      "condition": {
+        "type": "contains_any",
+        "words": ["betray", "lie", "deceive"]
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_trust",
+        "change": -2,
+        "frequency": "once_per_chat"
+      }
+    }
+  ]
+}

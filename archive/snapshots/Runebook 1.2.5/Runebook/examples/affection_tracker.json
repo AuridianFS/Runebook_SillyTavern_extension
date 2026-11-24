@@ -1,0 +1,20 @@
+{
+  "name": "Affection Tracker",
+  "meters": [
+    { "id": "affection", "name": "Affection", "type": "bar", "min": 0, "max": 100, "start": 30,
+      "decay": { "after": 6, "amount": -1 } },
+    { "id": "trust", "name": "Trust", "type": "pips", "min": 0, "max": 5, "start": 2 }
+  ],
+  "rules": [
+    { "name": "Kind words", "meter": "affection", "keywords": ["love", "care", "thank you", "sweet"], "on": "user", "change": 5 },
+    { "name": "Hurtful words", "meter": "affection", "keywords": ["hate", "disgusting", "annoying"], "on": "user", "change": -8 },
+    { "name": "Shared a secret", "meter": "trust", "keywords": ["secret", "promise"], "on": "user", "change": 1, "frequency": "once_per_chat" },
+    { "name": "Betrayal", "meter": "trust", "keywords": ["betray", "lied to you", "deceive"], "change": -2 }
+  ],
+  "influences": [
+    { "meter": "affection", "min": 0, "max": 24, "status": "Cold", "text": "{{char}} is distant and guarded toward {{user}}." },
+    { "meter": "affection", "min": 25, "max": 64, "status": "Warming up", "text": "{{char}} is polite and curious about {{user}}." },
+    { "meter": "affection", "min": 65, "max": 100, "status": "Fond", "text": "{{char}} is openly affectionate and teasing with {{user}}." },
+    { "meter": "trust", "min": 0, "max": 1, "text": "{{char}} will not share personal secrets." }
+  ]
+}

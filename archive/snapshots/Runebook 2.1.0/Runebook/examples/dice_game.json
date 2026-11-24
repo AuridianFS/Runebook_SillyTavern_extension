@@ -1,0 +1,79 @@
+{
+  "name": "Dice Game",
+  "meters": [
+    {
+      "id": "hp",
+      "name": "HP",
+      "type": "bar",
+      "min": 0,
+      "max": 20,
+      "start": 20,
+      "icon": "❤️",
+      "color": "#ff5252"
+    },
+    {
+      "id": "danger",
+      "name": "Danger",
+      "type": "pips",
+      "min": 0,
+      "max": 3,
+      "start": 0,
+      "decay": {
+        "after": 4,
+        "amount": -1
+      },
+      "icon": "☠️",
+      "pip": "square"
+    }
+  ],
+  "rules": [
+    {
+      "name": "Hit taken",
+      "meter": "hp",
+      "keywords": [
+        "wounded",
+        "stabs",
+        "slashes",
+        "hits you"
+      ],
+      "on": "ai",
+      "change": "-1d4"
+    },
+    {
+      "name": "Healing",
+      "meter": "hp",
+      "keywords": [
+        "potion",
+        "bandage",
+        "rest"
+      ],
+      "change": "1d6"
+    },
+    {
+      "name": "Ambush",
+      "meter": "danger",
+      "keywords": [
+        "ambush",
+        "trap"
+      ],
+      "on": "ai",
+      "change": 1
+    }
+  ],
+  "influences": [
+    {
+      "meter": "hp",
+      "min": 0,
+      "max": 5,
+      "status": "Critical",
+      "text": "{{user}} is badly hurt. Describe pain and exhaustion."
+    },
+    {
+      "meter": "danger",
+      "min": 3,
+      "max": 3,
+      "status": "Deadly",
+      "text": "Enemies are now actively trying to kill {{user}}."
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "name": "Wallet Tracker",
+  "meters": [
+    {
+      "id": "meter_wallet",
+      "name": "Money ($)",
+      "type": "number",
+      "startValue": 100.0,
+      "decimalPlaces": 2
+    },
+    {
+      "id": "meter_broke_status",
+      "name": "Broke Status",
+      "type": "bar",
+      "startValue": 0,
+      "min": 0,
+      "max": 100
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule_spending",
+      "name": "Spending money",
+      "condition": {
+        "type": "regex",
+        "pattern": "\\b(\\d+)\\s*(dollars?|bucks?)\\b",
+        "negative": true
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_wallet",
+        "change": -10.0,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "rule_earning",
+      "name": "Earning money",
+      "condition": {
+        "type": "regex",
+        "pattern": "\\b(\\d+)\\s*(dollars?|bucks?)\\b"
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_wallet",
+        "change": 10.0,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "rule_buy_item",
+      "name": "Buy item interaction",
+      "condition": {
+        "type": "contains_any",
+        "words": ["buy", "purchase", "spent"]
+      },
+      "action": {
+        "type": "modify_meter",
+        "meterId": "meter_wallet",
+        "change": -5.0,
+        "frequency": "always"
+      }
+    },
+    {
+      "id": "rule_low_money_warning",
+      "name": "Low money warning",
+      "condition": {
+        "type": "contains_any",
+        "words": ["poor", "broke"]
+      },
+      "action": {
+        "type": "show_status",
+        "status": "{{user}} is feeling poor!",
+        "frequency": "once_per_chat"
+      }
+    }
+  ],
+  "triggers": [
+    {
+      "id": "trigger_broke_threshold",
+      "name": "Broke threshold reached",
+      "condition": {
+        "type": "meter_below",
+        "meterId": "meter_wallet",
+        "threshold": 10.0
+      },
+      "action": {
+        "type": "set_meter",
+        "meterId": "meter_broke_status",
+        "value": 100,
+        "frequency": "once_per_chat"
+      }
+    },
+    {
+      "id": "trigger_recovery",
+      "name": "Money recovered",
+      "condition": {
+        "type": "meter_above",
+        "meterId": "meter_wallet",
+        "threshold": 50.0
+      },
+      "action": {
+        "type": "set_meter",
+        "meterId": "meter_broke_status",
+        "value": 0,
+        "frequency": "once_per_chat"
+      }
+    }
+  ]
+}
