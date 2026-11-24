@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.0
+- Master switch plus separate switches for the meters panel, change notes and prompt injection.
+- Drawer info boxes and tooltips; README sections on cost, troubleshooting and generating rulebooks with an AI.
+- Test panel (dry-run a sample message) and prompt preview with token estimate.
+
 ## 2.1.0
 - Dock left/right of chat or float; per-rulebook minimize; auto-compact with 3+ rulebooks or narrow screens.
 - Meter `icon`, `color`, bar `style: slider`, pip shapes; influence `description` and `color`.

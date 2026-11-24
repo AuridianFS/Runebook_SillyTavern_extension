@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { applyMessage, buildPrompt, createState, getInfluence, normalizeRulebook, resolveAmount } from '../engine.js';
+import { dryRun, applyMessage, buildPrompt, createState, getInfluence, normalizeRulebook, resolveAmount } from '../engine.js';
 
 const book = () => normalizeRulebook({
     name: 'T',
@@ -87,4 +87,12 @@ test('look options validate and structured log works', () => {
     assert.throws(() => normalizeRulebook({ name: 'x', meters: [{ name: 'm', color: 'red;}body{' }] }), /color/);
     assert.throws(() => normalizeRulebook({ name: 'x', meters: [{ name: 'm', icon: '<img src=x>' }] }), /icon/);
     assert.throws(() => normalizeRulebook({ name: 'x', meters: [{ name: 'm', pip: 'triangle' }] }), /pip/);
+});
+
+test('dryRun does not change real state', () => {
+    const rb = book(), state = createState(rb);
+    const { log, prompt } = dryRun([{ rb, state }], 'hi', 'user');
+    assert.equal(log.length, 1);
+    assert.equal(state.values.a, 50);
+    assert.match(prompt, /A: 60\/100/);
 });

@@ -276,3 +276,16 @@ export function buildPrompt(entries) {
     }
     return blocks.join('\n\n');
 }
+
+/**
+ * Test a message against active rulebooks without changing real state.
+ * @returns {{log: object[], prompt: string}} what would change and the prompt that would result
+ */
+export function dryRun(entries, text, source, rng = Math.random) {
+    const copies = entries.map(({ rb, state }) => ({ rb, state: structuredClone(state) }));
+    const log = [];
+    for (const { rb, state } of copies) {
+        for (const c of applyMessage(rb, state, text, source, rng)) log.push({ book: rb.name, ...c });
+    }
+    return { log, prompt: buildPrompt(copies) };
+}

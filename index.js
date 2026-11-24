@@ -4,13 +4,13 @@
  * influence rules tell the character how to behave at different levels.
  */
 import {
-    applyMessage, buildPrompt, createState, getInfluence, normalizeRulebook, repairState,
+    applyMessage, buildPrompt, createState, dryRun, getInfluence, normalizeRulebook, repairState,
 } from './engine.js';
 
 const MODULE = 'runebook';
 const PROMPT_KEY = 'runebook_prompt';
 const EXAMPLES = ['blank_template', 'affection_tracker', 'wallet_tracker', 'dice_game'];
-const DEFAULTS = { enabled: true, hud: true, dock: 'right', compact: 'auto', collapsed: {}, rulebooks: [] };
+const DEFAULTS = { enabled: true, hud: true, notes: true, inject: true, dock: 'right', compact: 'auto', collapsed: {}, rulebooks: [] };
 const HUD_WIDTH = 230;
 const PIP_GLYPHS = { circle: '●', heart: '♥', star: '★', square: '■' };
 
@@ -56,10 +56,21 @@ function activeEntries() {
 
 function updatePrompt() {
     const c = ctx();
-    const text = settings().enabled ? buildPrompt(activeEntries()) : '';
+    const full = settings().enabled ? buildPrompt(activeEntries()) : '';
+    const text = settings().inject ? full : '';
+    renderPreview(full, settings().inject);
     const position = c.extension_prompt_types?.IN_CHAT ?? 1;
     const role = c.extension_prompt_roles?.SYSTEM ?? 0;
     c.setExtensionPrompt(PROMPT_KEY, text, position, 1, false, role);
+}
+
+function renderPreview(text, injected) {
+    const box = $id('runebook_preview');
+    if (!box) return;
+    box.textContent = text || '(nothing: no rulebook attached or Runebook is off)';
+    $id('runebook_preview_info').textContent = text
+        ? `~${Math.ceil(text.length / 4)} tokens per turn${injected ? '' : ' (injection is OFF, so the AI does not see this)'}`
+        : '';
 }
 
 let lastProcessed = '';
@@ -80,7 +91,7 @@ async function onMessage(id) {
         for (const c of log) {
             changed = true;
             const delta = c.after - c.before;
-            if (delta !== 0) pushNote(`${c.name} ${delta > 0 ? '+' : ''}${delta} (${c.rule})`);
+            if (delta !== 0 && settings().notes) pushNote(`${c.name} ${delta > 0 ? '+' : ''}${delta} (${c.rule})`);
         }
     }
     if (changed) await saveChat();
@@ -281,6 +292,8 @@ function renderDrawer() {
     const active = new Set(chatData().active);
     $id('runebook_enabled').checked = s.enabled;
     $id('runebook_hud_toggle').checked = s.hud;
+    $id('runebook_notes_toggle').checked = s.notes;
+    $id('runebook_inject_toggle').checked = s.inject;
     $id('runebook_dock').value = s.dock;
     $id('runebook_compact').value = s.compact;
 
@@ -296,6 +309,19 @@ function renderDrawer() {
         </div>`).join('') : '<small>No rulebooks yet. Load an example or import a JSON file.</small>';
 }
 
+function runTest() {
+    const text = $id('runebook_test_text').value.trim();
+    const out = $id('runebook_test_result');
+    if (!text) { out.textContent = 'Type a message first.'; return; }
+    const entries = activeEntries();
+    if (!entries.length) { out.textContent = 'Attach a rulebook to this chat first.'; return; }
+    const { log, prompt } = dryRun(entries, text, $id('runebook_test_source').value);
+    const changes = log.length
+        ? log.map((c) => `${c.book}: ${c.rule}: ${c.name} ${c.before} -> ${c.after}`).join('\n')
+        : 'No rules would fire.';
+    out.textContent = `${changes}\n\nPrompt after this message:\n${prompt}`;
+}
+
 function buildDrawer() {
     const options = EXAMPLES.map((e) => `<option value="${e}">${e.replace(/_/g, ' ')}</option>`).join('');
     return `
@@ -305,8 +331,25 @@ function buildDrawer() {
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <label class="checkbox_label"><input type="checkbox" id="runebook_enabled"><span>Enable Runebook</span></label>
-            <label class="checkbox_label"><input type="checkbox" id="runebook_hud_toggle"><span>Show meters on screen</span></label>
+            <label class="checkbox_label" title="Master switch. Off = no message listening, no panel, nothing added to the prompt.">
+                <input type="checkbox" id="runebook_enabled"><span>Enable Runebook (master switch)</span>
+            </label>
+
+            <details class="rb-info">
+                <summary>How it works and what it costs</summary>
+                <ul>
+                    <li>A <b>rulebook</b> has <b>meters</b> (scores), <b>rules</b> (keywords that move a meter) and <b>influences</b> (status text and AI instructions at different levels).</li>
+                    <li>Tick a rulebook below to attach it to <b>this chat</b>. Values are saved per chat.</li>
+                    <li>Updates are plain text matching on each <b>new</b> message. No AI calls are made, so performance impact is negligible.</li>
+                    <li>History and the greeting are not scanned unless you press <b>Rescan chat</b>.</li>
+                    <li>The only real cost is tokens: current values plus matching influence text are added to the prompt each turn (see the preview below).</li>
+                </ul>
+            </details>
+
+            <h4>Features</h4>
+            <label class="checkbox_label" title="Show the meters panel next to the chat."><input type="checkbox" id="runebook_hud_toggle"><span>Meters panel</span></label>
+            <label class="checkbox_label" title="Brief notes like 'Trust +1 (Shared a secret)' when a meter moves."><input type="checkbox" id="runebook_notes_toggle"><span>Change notes</span></label>
+            <label class="checkbox_label" title="Off = meters still track and show, but nothing is sent to the AI."><input type="checkbox" id="runebook_inject_toggle"><span>Send meter info to the AI</span></label>
             <div class="flex-container">
                 <label>Dock <select id="runebook_dock" class="text_pole">
                     <option value="right">Right of chat</option><option value="left">Left of chat</option><option value="float">Floating top right</option>
@@ -315,18 +358,35 @@ function buildDrawer() {
                     <option value="auto">Auto (compact if 3+)</option><option value="off">Always full</option><option value="on">Always compact</option>
                 </select></label>
             </div>
-            <small>Tick a rulebook below to attach it to the current chat.</small>
+
+            <h4>Rulebooks</h4>
+            <small>Tick a rulebook to attach it to the current chat.</small>
             <div id="runebook_list"></div>
             <div class="flex-container">
                 <select id="runebook_example" class="text_pole">${options}</select>
-                <div class="menu_button" id="runebook_load_example">Add example</div>
+                <div class="menu_button" id="runebook_load_example" title="Add a bundled example or the blank template">Add example</div>
             </div>
             <div class="flex-container">
-                <div class="menu_button" id="runebook_import">Import JSON</div>
-                <div class="menu_button" id="runebook_reset">Reset meters</div>
-                <div class="menu_button" id="runebook_rescan" title="Replay the whole chat, greeting included">Rescan chat</div>
+                <div class="menu_button" id="runebook_import" title="Import a rulebook .json file">Import JSON</div>
+                <div class="menu_button" id="runebook_reset" title="Set this chat's meters back to their starting values">Reset meters</div>
+                <div class="menu_button" id="runebook_rescan" title="Replay the whole chat, greeting included, to rebuild meters. Dice rules re-roll.">Rescan chat</div>
             </div>
             <input type="file" id="runebook_file" accept=".json,application/json" hidden>
+
+            <h4>Test a message</h4>
+            <small>See which rules would fire. Nothing is changed.</small>
+            <textarea id="runebook_test_text" class="text_pole" rows="2" placeholder="Type a sample message..."></textarea>
+            <div class="flex-container">
+                <select id="runebook_test_source" class="text_pole"><option value="user">As user</option><option value="ai">As AI</option></select>
+                <div class="menu_button" id="runebook_test_run">Test</div>
+            </div>
+            <pre id="runebook_test_result" class="rb-pre"></pre>
+
+            <details class="rb-info">
+                <summary>Prompt preview</summary>
+                <small id="runebook_preview_info"></small>
+                <pre id="runebook_preview" class="rb-pre"></pre>
+            </details>
         </div>
     </div>`;
 }
@@ -352,6 +412,9 @@ function bindDrawer() {
         const rb = addRulebook(raw);
         toast('success', `Imported "${rb.name}"`);
     }));
+    $id('runebook_notes_toggle').addEventListener('change', (e) => { settings().notes = e.target.checked; save(); });
+    $id('runebook_inject_toggle').addEventListener('change', (e) => { settings().inject = e.target.checked; save(); updatePrompt(); });
+    $id('runebook_test_run').addEventListener('click', runTest);
     $id('runebook_reset').addEventListener('click', resetChat);
     $id('runebook_rescan').addEventListener('click', () => guarded(rescanChat));
     $id('runebook_dock').addEventListener('change', (e) => { settings().dock = e.target.value; save(); renderHud(); });
