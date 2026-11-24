@@ -1,129 +1,43 @@
 {
-  "_help": "Copy this file, rename it, and edit. Keys starting with _ are ignored. Delete any meter, rule, milestone or influence you don't need. Import it from the Runebook drawer or edit it in the in-app JSON editor.",
+  "_help": "Copy this file, rename it, and edit. Keys starting with _ are ignored. Delete any rule/influence you don't need. Import it from the Runebook drawer.",
   "name": "My Tracker",
   "meters": [
     {
-      "_help": "type: bar | pips | number. min/max/start optional. decay: after N messages with no change, add amount. Look (all optional): icon (emoji or 'fa-solid fa-heart'), color, style ('bar' or 'slider') for bars, pip ('circle','heart','star','square') for pips.",
+      "_help": "type: bar | pips | number. min/max/start are optional. decay: after N messages with no change, add amount.",
       "id": "mood",
       "name": "Mood",
       "type": "bar",
       "min": 0,
       "max": 100,
       "start": 50,
-      "decay": {
-        "after": 8,
-        "amount": -1
-      },
-      "icon": "🙂",
-      "color": "#7c4dff",
-      "style": "slider"
+      "decay": { "after": 8, "amount": -1 }
     },
-    {
-      "id": "trust",
-      "name": "Trust",
-      "type": "pips",
-      "min": 0,
-      "max": 5,
-      "start": 1,
-      "pip": "heart",
-      "color": "#ff6b9d"
-    },
-    {
-      "id": "gold",
-      "name": "Gold",
-      "type": "number",
-      "min": 0,
-      "start": 10,
-      "icon": "🪙"
-    }
+    { "id": "trust", "name": "Trust", "type": "pips", "min": 0, "max": 5, "start": 1 },
+    { "id": "gold", "name": "Gold", "type": "number", "min": 0, "start": 10 }
   ],
   "rules": [
     {
-      "_help": "Use keywords (whole words, any match) and/or regex. conditions supports all/any/not arrays of text or meter comparisons. cooldown is the number of subsequent non-system chat messages. event is an optional event name. aiCondition is optional and requires AI-assisted mode. Use exactly one of change or set.",
+      "_help": "Use keywords (whole words, any match) and/or regex. Use exactly one of change or set; each can be a number or dice like 1d6, -1d4, 2d6+1. on: user | ai | both. frequency: always | once_per_chat.",
       "name": "Kind words",
       "meter": "mood",
-      "keywords": [
-        "thank you",
-        "great job"
-      ],
+      "keywords": ["thank you", "great job"],
       "on": "user",
       "change": 5,
-      "frequency": "always",
-      "cooldown": 2,
-      "event": "kind_words"
+      "frequency": "always"
     },
-    {
-      "name": "First promise",
-      "meter": "trust",
-      "keywords": [
-        "promise"
-      ],
-      "change": 1,
-      "frequency": "once_per_chat"
-    },
-    {
-      "name": "Trusting gift",
-      "meter": "trust",
-      "keywords": ["gift"],
-      "conditions": {
-        "all": [
-          { "meter": "trust", "operator": "gte", "value": 2 }
-        ],
-        "not": [
-          { "keywords": ["fake"] }
-        ]
-      },
-      "change": 1
-    },
-    {
-      "name": "Sincere apology",
-      "meter": "mood",
-      "aiCondition": "The message contains a sincere apology, not merely the word 'sorry'.",
-      "change": 5
-    },
-    {
-      "name": "Loot",
-      "meter": "gold",
-      "regex": "\\bfinds? (a )?(coin|purse)\\b",
-      "on": "ai",
-      "change": "1d6"
-    },
-    {
-      "name": "Reset on argument",
-      "meter": "mood",
-      "keywords": [
-        "shut up"
-      ],
-      "set": 10
-    }
-  ],
-  "milestones": [
-    {
-      "_help": "Fires when a meter crosses at. direction: up, down, or either. One fire per chat by default; set repeat to true to fire on every crossing.",
-      "id": "mood_high",
-      "name": "Mood high",
-      "meter": "mood",
-      "at": 70,
-      "direction": "up"
-    }
+    { "name": "First promise", "meter": "trust", "keywords": ["promise"], "change": 1, "frequency": "once_per_chat" },
+    { "name": "Loot", "meter": "gold", "regex": "\\bfinds? (a )?(coin|purse)\\b", "on": "ai", "change": "1d6" },
+    { "name": "Reset on argument", "meter": "mood", "keywords": ["shut up"], "set": 10 }
   ],
   "influences": [
     {
-      "_help": "min/max inclusive, default to full range. status, text (sent to the AI), description (shown on screen), color (overrides the meter color) - give at least one of status/text/description. {{char}} and {{user}} work in text.",
+      "_help": "min/max are inclusive and default to the meter's full range. Give a status, text, or both. {{char}} and {{user}} work in text.",
       "meter": "mood",
       "min": 0,
       "max": 30,
       "status": "Upset",
-      "text": "{{char}} is irritable and short with {{user}}.",
-      "description": "Player-facing note shown on screen only (not sent to the AI).",
-      "color": "#ff5252"
+      "text": "{{char}} is irritable and short with {{user}}."
     },
-    {
-      "meter": "mood",
-      "min": 71,
-      "max": 100,
-      "status": "Cheerful",
-      "text": "{{char}} is upbeat and talkative."
-    }
+    { "meter": "mood", "min": 71, "max": 100, "status": "Cheerful", "text": "{{char}} is upbeat and talkative." }
   ]
 }
