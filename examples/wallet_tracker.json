@@ -1,14 +1,49 @@
 {
   "name": "Wallet Tracker",
   "meters": [
-    { "id": "gold", "name": "Gold", "type": "number", "min": 0, "start": 50 }
+    {
+      "id": "gold",
+      "name": "Gold",
+      "type": "number",
+      "min": 0,
+      "start": 50,
+      "icon": "🪙",
+      "color": "#ffcc00"
+    }
   ],
   "rules": [
-    { "name": "Earned coin", "meter": "gold", "regex": "\\b(?:receive|earn|find)s?\\b.{0,20}\\bgold\\b", "change": "1d10" },
-    { "name": "Bought something", "meter": "gold", "keywords": ["buy", "purchase", "pay for"], "on": "user", "change": -5 }
+    {
+      "name": "Earned coin",
+      "meter": "gold",
+      "regex": "\\b(?:receive|earn|find)s?\\b.{0,20}\\bgold\\b",
+      "change": "1d10"
+    },
+    {
+      "name": "Bought something",
+      "meter": "gold",
+      "keywords": [
+        "buy",
+        "purchase",
+        "pay for"
+      ],
+      "on": "user",
+      "change": -5
+    }
   ],
   "influences": [
-    { "meter": "gold", "min": 0, "max": 9, "status": "Broke", "text": "{{user}} is nearly out of gold and cannot afford much." },
-    { "meter": "gold", "min": 200, "max": 1000000000, "status": "Rich", "text": "{{user}} is wealthy and merchants treat them accordingly." }
+    {
+      "meter": "gold",
+      "min": 0,
+      "max": 9,
+      "status": "Broke",
+      "text": "{{user}} is nearly out of gold and cannot afford much."
+    },
+    {
+      "meter": "gold",
+      "min": 200,
+      "max": 1000000000,
+      "status": "Rich",
+      "text": "{{user}} is wealthy and merchants treat them accordingly."
+    }
   ]
 }

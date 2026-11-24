@@ -10,7 +10,9 @@ import {
 const MODULE = 'runebook';
 const PROMPT_KEY = 'runebook_prompt';
 const EXAMPLES = ['blank_template', 'affection_tracker', 'wallet_tracker', 'dice_game'];
-const DEFAULTS = { enabled: true, hud: true, rulebooks: [] };
+const DEFAULTS = { enabled: true, hud: true, dock: 'right', compact: 'auto', collapsed: {}, rulebooks: [] };
+const HUD_WIDTH = 230;
+const PIP_GLYPHS = { circle: '●', heart: '♥', star: '★', square: '■' };
 
 const ctx = () => SillyTavern.getContext();
 const $id = (id) => document.getElementById(id);
@@ -75,9 +77,10 @@ async function onMessage(id) {
     let changed = false;
     for (const { rb, state } of activeEntries()) {
         const log = applyMessage(rb, state, msg.mes, source);
-        if (log.length) {
+        for (const c of log) {
             changed = true;
-            console.debug('[Runebook]', rb.name, log);
+            const delta = c.after - c.before;
+            if (delta !== 0) pushNote(`${c.name} ${delta > 0 ? '+' : ''}${delta} (${c.rule})`);
         }
     }
     if (changed) await saveChat();
@@ -130,6 +133,28 @@ function resetChat() {
     renderHud();
 }
 
+/** Rebuild meters from scratch by replaying every message in the chat, greeting included. */
+async function rescanChat() {
+    const data = chatData();
+    const entries = activeEntries();
+    for (const { rb } of entries) data.states[rb.id] = createState(rb);
+    for (const msg of ctx().chat ?? []) {
+        if (msg.is_system || !msg.mes) continue;
+        for (const { rb } of entries) applyMessage(rb, data.states[rb.id], msg.mes, msg.is_user ? 'user' : 'ai');
+    }
+    await saveChat();
+    updatePrompt();
+    renderHud();
+    toast('success', 'Meters rebuilt from the chat. Dice rules were re-rolled.');
+}
+
+// Short on-screen notes like "Trust +1 (Shared a secret)" that fade after a few seconds.
+const notes = [];
+function pushNote(text) {
+    notes.push(text);
+    setTimeout(() => { notes.shift(); renderHud(); }, 4000);
+}
+
 function download(rb) {
     const { id, name, meters, rules, influences } = rb;
     const blob = new Blob([JSON.stringify({ id, name, meters, rules, influences }, null, 2)], { type: 'application/json' });
@@ -159,16 +184,72 @@ async function guarded(fn) {
 
 // ---------- UI ----------
 
-function meterHtml(meter, value) {
+function iconHtml(icon) {
+    if (!icon) return '';
+    return icon.startsWith('fa-') ? `<i class="${esc(icon)}"></i>` : esc(icon);
+}
+
+function meterHtml(meter, value, color) {
+    const style = color ? ` style="--rb-color:${esc(color)}"` : '';
     if (meter.type === 'pips') {
         const total = Math.min(Math.round(meter.max - meter.min), 20);
         const filled = Math.round(value - meter.min);
-        const pips = Array.from({ length: total }, (_, i) => `<span class="rb-pip${i < filled ? ' on' : ''}"></span>`).join('');
-        return `<div class="rb-pips">${pips}</div>`;
+        const glyph = meter.icon ? iconHtml(meter.icon) : PIP_GLYPHS[meter.pip ?? 'circle'];
+        const pips = Array.from({ length: total }, (_, i) => `<span class="rb-pip${i < filled ? ' on' : ''}">${glyph}</span>`).join('');
+        return `<div class="rb-pips"${style}>${pips}</div>`;
     }
-    if (meter.type === 'number') return `<span class="rb-num">${esc(value)}</span>`;
+    if (meter.type === 'number') return `<span class="rb-num"${style}>${esc(value)}</span>`;
     const pct = ((value - meter.min) / (meter.max - meter.min)) * 100;
-    return `<div class="rb-bar"><div class="rb-fill" style="width:${pct}%"></div></div><span class="rb-num">${esc(value)}</span>`;
+    if (meter.style === 'slider') {
+        return `<div class="rb-slider"${style}><div class="rb-knob" style="left:${pct}%"></div></div><span class="rb-num">${esc(value)}</span>`;
+    }
+    return `<div class="rb-bar"${style}><div class="rb-fill" style="width:${pct}%"></div></div><span class="rb-num">${esc(value)}</span>`;
+}
+
+function isCompact(rbId, count) {
+    const own = settings().collapsed[rbId];
+    if (own !== undefined) return own;
+    const mode = settings().compact;
+    return mode === 'on' || (mode === 'auto' && (count > 2 || window.innerWidth < 800));
+}
+
+function bookHtml({ rb, state }, count) {
+    const info = getInfluence(rb, state);
+    const compact = isCompact(rb.id, count);
+    const body = rb.meters.map((m) => {
+        const color = info.colors[m.id] ?? m.color;
+        const status = info.statuses[m.id];
+        const desc = info.descriptions[m.id];
+        if (compact) {
+            const tip = [m.name, status, desc].filter(Boolean).join(' - ');
+            return `<span class="rb-chip" title="${esc(tip)}"${color ? ` style="--rb-color:${esc(color)}"` : ''}>${iconHtml(m.icon) || esc(m.name)} <b>${esc(state.values[m.id])}</b>${status ? ` ${esc(status)}` : ''}</span>`;
+        }
+        return `<div class="rb-row" title="${esc(desc ?? '')}">
+            <span class="rb-label">${iconHtml(m.icon)} ${esc(m.name)}</span>${meterHtml(m, state.values[m.id], color)}
+            ${status ? `<span class="rb-status">${esc(status)}</span>` : ''}
+            ${desc ? `<div class="rb-desc">${esc(desc)}</div>` : ''}
+        </div>`;
+    }).join('');
+    return `<div class="rb-hud-book" data-id="${esc(rb.id)}">
+        <div class="rb-head" title="Click to ${compact ? 'expand' : 'minimize'}"><b>${esc(rb.name)}</b>
+        <i class="fa-solid ${compact ? 'fa-chevron-down' : 'fa-chevron-up'}"></i></div>
+        <div class="${compact ? 'rb-chips' : ''}">${body}</div></div>`;
+}
+
+function positionHud(hud) {
+    const dock = settings().dock;
+    hud.className = `rb-dock-${dock}`;
+    hud.style.cssText = '';
+    if (dock === 'float') return;
+    const sheld = $id('sheld')?.getBoundingClientRect();
+    const room = sheld ? (dock === 'left' ? sheld.left : window.innerWidth - sheld.right) : 0;
+    if (sheld && room >= HUD_WIDTH + 16) {
+        // Enough empty space beside the chat: sit right next to it.
+        hud.style[dock] = `${(dock === 'left' ? sheld.left : window.innerWidth - sheld.right) - HUD_WIDTH - 8}px`;
+    } else {
+        hud.style[dock] = '4px'; // No room: overlay the screen edge.
+        hud.classList.add('rb-overlay');
+    }
 }
 
 function renderHud() {
@@ -178,17 +259,19 @@ function renderHud() {
     if (!hud) {
         hud = document.createElement('div');
         hud.id = 'runebook_hud';
+        hud.addEventListener('click', (e) => {
+            const id = e.target.closest('.rb-head')?.closest('.rb-hud-book')?.dataset.id;
+            if (!id) return;
+            const count = activeEntries().length;
+            settings().collapsed[id] = !isCompact(id, count);
+            save();
+            renderHud();
+        });
         document.body.appendChild(hud);
     }
-    hud.innerHTML = entries.map(({ rb, state }) => {
-        const { statuses } = getInfluence(rb, state);
-        const rows = rb.meters.map((m) => `
-            <div class="rb-row">
-                <span class="rb-label">${esc(m.name)}</span>${meterHtml(m, state.values[m.id])}
-                ${statuses[m.id] ? `<span class="rb-status">${esc(statuses[m.id])}</span>` : ''}
-            </div>`).join('');
-        return `<div class="rb-hud-book"><b>${esc(rb.name)}</b>${rows}</div>`;
-    }).join('');
+    hud.innerHTML = entries.map((e) => bookHtml(e, entries.length)).join('')
+        + (notes.length ? `<div class="rb-notes">${notes.map((n) => `<div>${esc(n)}</div>`).join('')}</div>` : '');
+    positionHud(hud);
 }
 
 function renderDrawer() {
@@ -198,6 +281,8 @@ function renderDrawer() {
     const active = new Set(chatData().active);
     $id('runebook_enabled').checked = s.enabled;
     $id('runebook_hud_toggle').checked = s.hud;
+    $id('runebook_dock').value = s.dock;
+    $id('runebook_compact').value = s.compact;
 
     list.innerHTML = s.rulebooks.length ? s.rulebooks.map((rb) => `
         <div class="rb-item" data-id="${esc(rb.id)}">
@@ -222,6 +307,14 @@ function buildDrawer() {
         <div class="inline-drawer-content">
             <label class="checkbox_label"><input type="checkbox" id="runebook_enabled"><span>Enable Runebook</span></label>
             <label class="checkbox_label"><input type="checkbox" id="runebook_hud_toggle"><span>Show meters on screen</span></label>
+            <div class="flex-container">
+                <label>Dock <select id="runebook_dock" class="text_pole">
+                    <option value="right">Right of chat</option><option value="left">Left of chat</option><option value="float">Floating top right</option>
+                </select></label>
+                <label>Size <select id="runebook_compact" class="text_pole">
+                    <option value="auto">Auto (compact if 3+)</option><option value="off">Always full</option><option value="on">Always compact</option>
+                </select></label>
+            </div>
             <small>Tick a rulebook below to attach it to the current chat.</small>
             <div id="runebook_list"></div>
             <div class="flex-container">
@@ -230,7 +323,8 @@ function buildDrawer() {
             </div>
             <div class="flex-container">
                 <div class="menu_button" id="runebook_import">Import JSON</div>
-                <div class="menu_button" id="runebook_reset">Reset this chat's meters</div>
+                <div class="menu_button" id="runebook_reset">Reset meters</div>
+                <div class="menu_button" id="runebook_rescan" title="Replay the whole chat, greeting included">Rescan chat</div>
             </div>
             <input type="file" id="runebook_file" accept=".json,application/json" hidden>
         </div>
@@ -259,6 +353,11 @@ function bindDrawer() {
         toast('success', `Imported "${rb.name}"`);
     }));
     $id('runebook_reset').addEventListener('click', resetChat);
+    $id('runebook_rescan').addEventListener('click', () => guarded(rescanChat));
+    $id('runebook_dock').addEventListener('change', (e) => { settings().dock = e.target.value; save(); renderHud(); });
+    $id('runebook_compact').addEventListener('change', (e) => {
+        settings().compact = e.target.value; settings().collapsed = {}; save(); renderHud();
+    });
 
     $id('runebook_list').addEventListener('click', (e) => {
         const item = e.target.closest('.rb-item');
@@ -298,5 +397,6 @@ jQuery(() => {
     eventSource.on(event_types.MESSAGE_RECEIVED, onMessage);
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
 
+    window.addEventListener('resize', renderHud);
     onChatChanged();
 });

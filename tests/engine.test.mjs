@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { applyMessage, buildPrompt, createState, normalizeRulebook, resolveAmount } from '../engine.js';
+import { applyMessage, buildPrompt, createState, getInfluence, normalizeRulebook, resolveAmount } from '../engine.js';
 
 const book = () => normalizeRulebook({
     name: 'T',
@@ -71,4 +71,20 @@ test('all bundled examples validate', () => {
     for (const f of readdirSync(new URL('../examples', import.meta.url))) {
         normalizeRulebook(JSON.parse(readFileSync(new URL(`../examples/${f}`, import.meta.url), 'utf8')));
     }
+});
+
+test('look options validate and structured log works', () => {
+    const rb = normalizeRulebook({
+        name: 'L',
+        meters: [{ name: 'M', type: 'pips', max: 5, icon: 'fa-solid fa-heart', pip: 'star', color: '#fff' }],
+        rules: [{ meter: 'M', keywords: ['x'], change: 1 }],
+        influences: [{ meter: 'M', description: 'only on screen', color: 'red' }],
+    });
+    const s = createState(rb);
+    const log = applyMessage(rb, s, 'x', 'user');
+    assert.deepEqual(log[0], { rule: 'Rule 1', meter: 'm', name: 'M', before: 0, after: 1 });
+    assert.equal(getInfluence(rb, s).descriptions.m, 'only on screen');
+    assert.throws(() => normalizeRulebook({ name: 'x', meters: [{ name: 'm', color: 'red;}body{' }] }), /color/);
+    assert.throws(() => normalizeRulebook({ name: 'x', meters: [{ name: 'm', icon: '<img src=x>' }] }), /icon/);
+    assert.throws(() => normalizeRulebook({ name: 'x', meters: [{ name: 'm', pip: 'triangle' }] }), /pip/);
 });

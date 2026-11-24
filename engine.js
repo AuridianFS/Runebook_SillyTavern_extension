@@ -7,6 +7,10 @@
 export const METER_TYPES = ['bar', 'pips', 'number'];
 export const SOURCES = ['user', 'ai', 'both'];
 export const FREQUENCIES = ['always', 'once_per_chat'];
+export const PIP_SHAPES = ['circle', 'heart', 'star', 'square'];
+export const BAR_STYLES = ['bar', 'slider'];
+const COLOR_RE = /^(#[0-9a-f]{3,8}|[a-z]{3,20})$/i;
+const ICON_RE = /^[a-z0-9 -]{1,40}$/;
 
 const DICE_RE = /^([+-]?)(\d*)d(\d+)([+-]\d+)?$/i;
 
@@ -51,6 +55,27 @@ function normalizeMeter(raw, i) {
     if (!isNum(start)) throw new Error(`Meter "${name}" start must be a number`);
 
     const meter = { id: String(raw.id ?? slugify(name)), name, type, min, max, start: clamp(start, min, max) };
+
+    // Optional look: icon (emoji or Font Awesome classes), color, pip shape, bar style.
+    if (raw.icon != null) {
+        const icon = String(raw.icon).trim();
+        if (icon.startsWith('fa-') ? !ICON_RE.test(icon) : [...icon].length > 4) {
+            throw new Error(`Meter "${name}" icon must be an emoji or Font Awesome classes like "fa-solid fa-heart"`);
+        }
+        meter.icon = icon;
+    }
+    if (raw.color != null) {
+        if (!COLOR_RE.test(String(raw.color))) throw new Error(`Meter "${name}" color must be like "#ff6b9d" or "red"`);
+        meter.color = String(raw.color);
+    }
+    if (raw.pip != null) {
+        if (!PIP_SHAPES.includes(raw.pip)) throw new Error(`Meter "${name}" pip must be one of ${PIP_SHAPES.join(', ')}`);
+        meter.pip = raw.pip;
+    }
+    if (raw.style != null) {
+        if (!BAR_STYLES.includes(raw.style)) throw new Error(`Meter "${name}" style must be one of ${BAR_STYLES.join(', ')}`);
+        meter.style = raw.style;
+    }
 
     if (raw.decay != null) {
         const { after, amount } = raw.decay;
@@ -111,11 +136,14 @@ function normalizeInfluence(raw, i, meters) {
     if (!meter) throw new Error(`${where} references unknown meter "${raw.meter}"`);
     const status = String(raw.status ?? '').trim();
     const text = String(raw.text ?? '').trim();
-    if (!status && !text) throw new Error(`${where} needs "status" or "text"`);
+    const description = String(raw.description ?? '').trim();
+    const color = raw.color != null ? String(raw.color) : '';
+    if (!status && !text && !description) throw new Error(`${where} needs "status", "text" or "description"`);
+    if (color && !COLOR_RE.test(color)) throw new Error(`${where} color must be like "#ff6b9d" or "red"`);
     const min = raw.min ?? meter.min;
     const max = raw.max ?? meter.max;
     if (!isNum(min) || !isNum(max) || max < min) throw new Error(`${where} needs numeric min <= max`);
-    return { meter: meter.id, min, max, status, text };
+    return { meter: meter.id, min, max, status, text, description, color };
 }
 
 /** Validate raw JSON and return a clean rulebook. Throws Error with a readable message. */
@@ -181,7 +209,7 @@ export function matchesRule(rule, text) {
 /**
  * Apply one chat message to a rulebook's state. Mutates state.
  * @param {'user'|'ai'} source who wrote the message
- * @returns {string[]} human-readable log of what changed
+ * @returns {{rule:string, meter:string, name:string, before:number, after:number}[]} what changed
  */
 export function applyMessage(rb, state, text, source, rng = Math.random) {
     const log = [];
@@ -200,7 +228,7 @@ export function applyMessage(rb, state, text, source, rng = Math.random) {
         state.values[meter.id] = after;
         touched.add(meter.id);
         if (rule.frequency === 'once_per_chat') state.fired[rule.id] = true;
-        log.push(`${rule.name}: ${meter.name} ${before} -> ${after}`);
+        log.push({ rule: rule.name, meter: meter.id, name: meter.name, before, after });
     }
 
     for (const meter of rb.meters) {
@@ -211,23 +239,27 @@ export function applyMessage(rb, state, text, source, rng = Math.random) {
             const before = state.values[meter.id];
             state.values[meter.id] = clamp(before + meter.decay.amount, meter.min, meter.max);
             state.quiet[meter.id] = 0;
-            if (state.values[meter.id] !== before) log.push(`Decay: ${meter.name} ${before} -> ${state.values[meter.id]}`);
+            if (state.values[meter.id] !== before) log.push({ rule: 'Decay', meter: meter.id, name: meter.name, before, after: state.values[meter.id] });
         }
     }
     return log;
 }
 
-/** Status label (first match) and influence texts for the current values. */
+/** Per-meter status, description and color (first match each) plus prompt texts for current values. */
 export function getInfluence(rb, state) {
     const statuses = {};
+    const descriptions = {};
+    const colors = {};
     const texts = [];
     for (const inf of rb.influences) {
         const v = state.values[inf.meter];
         if (v < inf.min || v > inf.max) continue;
         if (inf.status && !statuses[inf.meter]) statuses[inf.meter] = inf.status;
+        if (inf.description && !descriptions[inf.meter]) descriptions[inf.meter] = inf.description;
+        if (inf.color && !colors[inf.meter]) colors[inf.meter] = inf.color;
         if (inf.text) texts.push(inf.text);
     }
-    return { statuses, texts };
+    return { statuses, descriptions, colors, texts };
 }
 
 /** Prompt block injected into the chat so the character reacts to the meters. */
