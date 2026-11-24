@@ -96,3 +96,10 @@ test('dryRun does not change real state', () => {
     assert.equal(state.values.a, 50);
     assert.match(prompt, /A: 60\/100/);
 });
+
+test('manifest is valid and points at real files', () => {
+    const m = JSON.parse(readFileSync(new URL('../manifest.json', import.meta.url), 'utf8'));
+    for (const key of ['display_name', 'js', 'css', 'version']) assert.ok(m[key], `manifest.${key}`);
+    readFileSync(new URL(`../${m.js}`, import.meta.url));
+    readFileSync(new URL(`../${m.css}`, import.meta.url));
+});
