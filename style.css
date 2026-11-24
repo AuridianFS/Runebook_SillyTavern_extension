@@ -48,3 +48,5 @@
 #runebook_settings .rb-info ul { margin: 4px 0 4px 18px; padding: 0; font-size: 0.9em; }
 #runebook_settings .rb-pre { white-space: pre-wrap; font-size: 0.8em; max-height: 200px; overflow-y: auto; margin: 4px 0; opacity: 0.9; }
 #runebook_settings textarea { width: 100%; box-sizing: border-box; }
+#runebook_settings #runebook_editor_json { font-family: monospace; }
+#runebook_settings #runebook_ai_key { min-width: 180px; }
