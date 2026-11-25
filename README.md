@@ -11,7 +11,7 @@ Meter values are injected into the prompt every turn so the character reacts to 
 
 ## Install
 
-SillyTavern -> Extensions -> Install extension -> `https://github.com/FiretailStudios/Runebook`
+SillyTavern -> Extensions -> Install extension -> `https://github.com/AuridianFS/Runebook_SillyTavern_extension`
 
 Then open the **Runebook** drawer in the Extensions panel, add an example or import a `.json` file, and tick the rulebook to attach it to the current chat. Meters appear in a panel docked to the right or left of the chat (or floating); pick the dock and size in the drawer. Click a rulebook's title to minimize it. With 3+ rulebooks (or on narrow screens) they go compact automatically. Toggle the panel from the wand menu.
 
