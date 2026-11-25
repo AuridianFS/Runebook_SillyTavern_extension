@@ -50,3 +50,35 @@
 #runebook_settings textarea { width: 100%; box-sizing: border-box; }
 #runebook_settings #runebook_editor_json { font-family: monospace; }
 #runebook_settings #runebook_ai_key { min-width: 180px; }
+
+
+#runebook_editor, #runebook_copybox {
+    position: fixed; inset: 0; z-index: 9000; display: flex; align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, 0.55); padding: 12px; box-sizing: border-box;
+}
+.rb-ed-box {
+    display: flex; flex-direction: column; width: min(900px, 100%); max-height: 100%;
+    background: var(--SmartThemeBlurTintColor); border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px; color: var(--SmartThemeBodyColor);
+}
+.rb-ed-head, .rb-ed-foot, .rb-ed-status { padding: 10px 14px; }
+.rb-ed-head { border-bottom: 1px solid var(--SmartThemeBorderColor); }
+.rb-ed-foot { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--SmartThemeBorderColor); }
+.rb-ed-body { overflow-y: auto; padding: 4px 14px 12px; flex: 1; }
+.rb-ed-body h4 { margin: 14px 0 6px; }
+.rb-ed-status { min-height: 1.4em; font-size: 0.9em; opacity: 0.9; }
+.rb-ed-status.error { color: #ff6b6b; opacity: 1; }
+.rb-ed-item {
+    position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px;
+    padding: 10px 36px 10px 10px; margin: 8px 0; border: 1px solid var(--SmartThemeBorderColor); border-radius: 8px;
+}
+.rb-ed-remove { position: absolute; top: 6px; right: 6px; padding: 2px 8px; }
+.rb-f { display: flex; flex-direction: column; gap: 2px; font-size: 0.85em; }
+.rb-f.wide { grid-column: 1 / -1; }
+.rb-f span { opacity: 0.8; }
+.rb-f input, .rb-f select, .rb-f textarea { width: 100%; box-sizing: border-box; }
+#runebook_copybox textarea { width: 100%; box-sizing: border-box; }
+
+.rb-ed-body .rb-pre { white-space: pre-wrap; font-size: 0.8em; max-height: 220px; overflow-y: auto; margin: 4px 0; opacity: 0.9; }
+.rb-ed-body .rb-info { margin: 12px 0 4px; }
+.rb-ed-body textarea { font-family: inherit; }

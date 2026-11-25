@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.0
+- Guided rulebook builder: a form for meters, rules (keywords, conditions, AI conditions, cooldowns, events), milestones and influences, with readable errors and a live JSON preview. No JSON knowledge needed. Raw JSON editing remains under "Advanced".
+- "Copy AI instructions" button: copies your tracker idea plus the complete, current format specification so any AI assistant can write a valid rulebook. The same text ships as RULEBOOK_SPEC.md.
+- FAQ in the drawer and README, including how connection profiles relate to the API Connections selection.
+- Tests keep the spec in sync with the engine and check that every example round-trips through the form.
+
 ## 2.3.1
 - Fixed AI-assisted mode taking over the chat: event handlers no longer block SillyTavern, the active-connection path uses a raw request (no character card or chat history) instead of a quiet chat generation, and requests include a strict JSON-classifier system prompt.
 - AI replies are parsed leniently (code fences and extra text are tolerated) and repeated errors are throttled.

@@ -6,6 +6,8 @@
 import {
     applyMessage, buildPrompt, createState, dryRun, getInfluence, normalizeRulebook, repairState,
 } from './engine.js';
+import { copyText, openBuilder } from './builder.js';
+import { buildAiPrompt } from './spec.js';
 
 const MODULE = 'runebook';
 const PROMPT_KEY = 'runebook_prompt';
@@ -542,9 +544,10 @@ function renderDrawer() {
                 <span>${esc(rb.name)}</span>
             </label>
             <span class="rb-item-meta">${rb.meters.length} meters, ${rb.rules.length} rules</span>
+            <div class="menu_button menu_button_icon" data-act="edit" title="Edit with the guided builder"><i class="fa-solid fa-pen"></i></div>
             <div class="menu_button menu_button_icon" data-act="export" title="Export"><i class="fa-solid fa-download"></i></div>
             <div class="menu_button menu_button_icon" data-act="delete" title="Delete"><i class="fa-solid fa-trash"></i></div>
-        </div>`).join('') : '<small>No rulebooks yet. Load an example or import a JSON file.</small>';
+        </div>`).join('') : '<small>No rulebooks yet. Create one with the guided builder, load an example, or import a JSON file.</small>';
 
     const editorBook = $id('runebook_editor_book');
     editorBook.innerHTML = '<option value="">New rulebook draft</option>'
@@ -598,6 +601,30 @@ function saveEditorBook() {
     editorTargetId = saved.id;
     renderDrawer();
     toast('success', `Saved "${saved.name}"`);
+}
+
+function newRulebookId(base) {
+    let id = base || 'rulebook';
+    for (let n = 2; settings().rulebooks.some((r) => r.id === id); n++) id = `${base}_${n}`;
+    return id;
+}
+
+function editRulebook(existing) {
+    openBuilder(existing, {
+        getAiInstructions: () => buildAiPrompt($id('runebook_idea')?.value ?? ''),
+        onSave: (rb) => {
+            if (!existing) rb.id = newRulebookId(rb.id);
+            const saved = addRulebook(rb);
+            editorTargetId = saved.id;
+            renderDrawer();
+            toast('success', `Saved "${saved.name}"`);
+        },
+    });
+}
+
+async function copyAiInstructions() {
+    const ok = await copyText(buildAiPrompt($id('runebook_idea').value), 'Rulebook instructions for an AI assistant');
+    if (ok) toast('success', 'AI instructions copied. Paste them into any AI assistant.');
 }
 
 function runTest() {
@@ -677,13 +704,20 @@ function buildDrawer() {
                 <div class="menu_button" id="runebook_load_example" title="Add a bundled example or the blank template">Add example</div>
             </div>
             <div class="flex-container">
+                <div class="menu_button" id="runebook_new" title="Build a rulebook with a form: no JSON needed">New rulebook (guided)</div>
                 <div class="menu_button" id="runebook_import" title="Import a rulebook .json file">Import JSON</div>
                 <div class="menu_button" id="runebook_reset" title="Set this chat's meters back to their starting values">Reset meters</div>
                 <div class="menu_button" id="runebook_rescan" title="Replay the whole chat, greeting included, to rebuild meters. Dice rules re-roll.">Rescan chat</div>
             </div>
             <input type="file" id="runebook_file" accept=".json,application/json" hidden>
 
-            <h4>In-app rulebook editor</h4>
+            <h4>Make a rulebook with an AI assistant</h4>
+            <small>Describe your tracker, then copy the instructions into any AI assistant (ChatGPT, Claude, a local model). It will reply with JSON you can import.</small>
+            <textarea id="runebook_idea" class="text_pole" rows="2" placeholder="e.g. Track a rival's jealousy (0-100) and my reputation (5 pips)..."></textarea>
+            <div class="menu_button" id="runebook_copy_ai" title="Copies your description plus the complete, current rulebook format">Copy AI instructions</div>
+
+            <details class="rb-info">
+            <summary>Advanced: edit raw JSON</summary>
             <div class="flex-container">
                 <select id="runebook_editor_book" class="text_pole"><option value="">New rulebook draft</option></select>
                 <div class="menu_button" id="runebook_editor_new">New</div>
@@ -695,6 +729,7 @@ function buildDrawer() {
                 <div class="menu_button" id="runebook_editor_save">Save rulebook</div>
             </div>
             <small id="runebook_editor_result"></small>
+            </details>
 
             <h4>Test a message</h4>
             <small>See which rules would fire. Nothing is changed.</small>
@@ -704,6 +739,18 @@ function buildDrawer() {
                 <div class="menu_button" id="runebook_test_run">Test</div>
             </div>
             <pre id="runebook_test_result" class="rb-pre"></pre>
+
+            <details class="rb-info">
+                <summary>FAQ</summary>
+                <ul>
+                    <li><b>What does "No profile selected" do?</b> AI-assisted checks use the custom fallback API if you filled one in; otherwise they use the connection currently open in API Connections, sending only Runebook's own prompt.</li>
+                    <li><b>Is the Runebook profile the same as the one in API Connections?</b> No, they are separate. The Runebook profile only affects AI-assisted rule checks. Chat replies always use whatever is open in API Connections.</li>
+                    <li><b>Both seem to use the same model.</b> If two profiles point at the same local server, that server answers both, and many local servers use whichever model is loaded regardless of the model name. To use a different model, point the profile at a different server or port, or a cloud API. Press <b>Test AI connection</b> and watch that server's log to confirm.</li>
+                    <li><b>Does the judge write into my chat?</b> No. It only returns rule ids to Runebook.</li>
+                    <li><b>A rule never fires.</b> Keywords match whole words only. Also check frequency (once per chat), cooldown, conditions, and that rules with an AI condition need AI-assisted mode turned on. Use <b>Test a message</b> to see what fires.</li>
+                    <li><b>Where is my data?</b> Rulebooks are in SillyTavern's settings; meter values are saved per chat.</li>
+                </ul>
+            </details>
 
             <details class="rb-info">
                 <summary>Prompt preview</summary>
@@ -777,6 +824,8 @@ function bindDrawer() {
         save();
     });
     $id('runebook_ai_test').addEventListener('click', testAiConnection);
+    $id('runebook_new').addEventListener('click', () => editRulebook(null));
+    $id('runebook_copy_ai').addEventListener('click', copyAiInstructions);
     $id('runebook_ai_key').addEventListener('input', (e) => { fallbackApiKey = e.target.value; });
     $id('runebook_test_run').addEventListener('click', runTest);
     $id('runebook_reset').addEventListener('click', resetChat);
@@ -792,6 +841,7 @@ function bindDrawer() {
         if (!item || !act) return;
         const id = item.dataset.id;
         if (act === 'attach') { setActive(id, e.target.checked); return; }
+        if (act === 'edit') editRulebook(settings().rulebooks.find((r) => r.id === id));
         if (act === 'export') download(settings().rulebooks.find((r) => r.id === id));
         if (act === 'delete' && confirm('Delete this rulebook?')) {
             deleteRulebook(id); updatePrompt(); renderHud(); renderDrawer();

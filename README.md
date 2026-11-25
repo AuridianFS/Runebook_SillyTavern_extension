@@ -15,6 +15,26 @@ SillyTavern -> Extensions -> Install extension -> `https://github.com/FiretailSt
 
 Then open the **Runebook** drawer in the Extensions panel, add an example or import a `.json` file, and tick the rulebook to attach it to the current chat. Meters appear in a panel docked to the right or left of the chat (or floating); pick the dock and size in the drawer. Click a rulebook's title to minimize it. With 3+ rulebooks (or on narrow screens) they go compact automatically. Toggle the panel from the wand menu.
 
+## Build a rulebook without writing JSON
+
+- **Guided builder:** in the Runebook drawer press **New rulebook (guided)**, or the pencil next to an existing rulebook. Name your meters first, then add rules, milestones and influences. Errors are explained in plain language, and a live JSON preview shows exactly what will be saved.
+- **Use an AI assistant:** describe your tracker in the drawer, press **Copy AI instructions**, and paste the result into any AI assistant. It contains the complete format, so the assistant can reply with valid JSON you import with **Import JSON** (or paste into the guided builder's raw JSON area under "Advanced").
+- **Reference:** [RULEBOOK_SPEC.md](RULEBOOK_SPEC.md) is the same specification, written for AI agents. It is generated from `spec.js`; run `node tools/build-spec.mjs` after changing the format. Tests fail if it drifts from the engine.
+
+## FAQ
+
+**What does "No profile selected" do?** AI-assisted checks use the custom fallback API if you filled one in; otherwise they use the connection currently open in API Connections, sending only Runebook's own prompt (no character card or chat history).
+
+**Is the Runebook connection profile the same as the one in API Connections?** No, they are separate settings. The Runebook profile only affects AI-assisted rule checks. Chat replies always use whatever is open in API Connections.
+
+**Both seem to use the same model.** If two profiles point at the same local server, that server answers both, and many local servers use whichever model is loaded regardless of the model name in the request. To use a different model, point the profile at a different server or port, or a cloud API. Press **Test AI connection** and watch that server's log to confirm which one answered.
+
+**Does the AI judge write into my chat?** No. It only returns rule ids to Runebook, and Runebook applies the rule's own action.
+
+**A rule never fires.** Keywords match whole words only. Check frequency (`once_per_chat`), cooldown, conditions, and that rules with an `aiCondition` only fire when AI-assisted mode is on. Use **Test a message** in the drawer to see what would fire.
+
+**Where is my data?** Rulebooks are stored in SillyTavern's extension settings; meter values are stored per chat.
+
 ## Rulebook format
 
 ```json
