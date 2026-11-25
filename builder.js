@@ -251,6 +251,31 @@ export async function copyText(text, title = 'Copy this text') {
     return false;
 }
 
+/**
+ * Show the AI-facing text of a rulebook before it is imported. Resolves true to import.
+ * Imported text enters AI-facing prompts, so it is shown for review first.
+ */
+export function confirmImport(rb, items, action = 'Import') {
+    return new Promise((resolve) => {
+        const box = document.createElement('div');
+        box.id = 'runebook_review';
+        const rows = items.map((i) => `<div class="rb-review-item${i.warning ? ' warn' : ''}">
+            <small>${esc(i.where)}</small><div>${esc(i.text)}</div>${i.warning ? `<small class="rb-warn">Heads up: this ${esc(i.warning)}.</small>` : ''}</div>`).join('');
+        const actionLabel = action === 'Save' ? 'saving' : 'importing';
+        box.innerHTML = `<div class="rb-ed-box"><div class="rb-ed-head"><b>Review before ${actionLabel} "${esc(rb.name)}"</b>
+            <small>Rulebooks can add instructions to your AI's user-role prompt context. Only use rulebooks you trust. This is the changed text it will send:</small></div>
+            <div class="rb-ed-body">${rows || '<small>This rulebook sends no custom text to the AI.</small>'}</div>
+            <div class="rb-ed-foot"><div class="menu_button" data-act="yes">${esc(action)}</div><div class="menu_button" data-act="no">Cancel</div></div></div>`;
+        box.addEventListener('click', (e) => {
+            const act = e.target.closest?.('[data-act]')?.dataset.act;
+            if (!act) return;
+            box.remove();
+            resolve(act === 'yes');
+        });
+        document.body.appendChild(box);
+    });
+}
+
 // ---------- modal UI ----------
 
 function fieldHtml(f, item, draft) {

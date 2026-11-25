@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { normalizeRulebook } from '../engine.js';
 import {
-    blankItem, draftToRaw, ensureId, formatCondition, newDraft, parseConditionLine, rulebookToDraft, validateDraft,
+    confirmImport, blankItem, draftToRaw, ensureId, formatCondition, newDraft, parseConditionLine, rulebookToDraft, validateDraft,
 } from '../builder.js';
 
 const load = (f) => JSON.parse(readFileSync(new URL(`../examples/${f}`, import.meta.url), 'utf8'));
@@ -84,4 +84,27 @@ test('form errors are readable', () => {
     assert.throws(() => validateDraft(d), /needs an amount/);
     r.amount = '1';
     assert.throws(() => validateDraft(d), /needs keywords, regex, conditions or aiCondition/);
+});
+
+test('import review dialog resolves true on Import and false on Cancel', async () => {
+    const made = [];
+    globalThis.document = {
+        createElement: () => { const el = { handlers: {}, innerHTML: '', addEventListener(t, f) { this.handlers[t] = f; }, remove() { this.removed = true; } }; made.push(el); return el; },
+        body: { appendChild() {} },
+    };
+    const rb = { name: 'Shared <b>book</b>' };
+    const items = [{ where: 'Sent every turn', text: '<script>x</script>', warning: 'contains role or script-like markup' }];
+    const yes = confirmImport(rb, items);
+    assert.ok(!made[0].innerHTML.includes('<script>'), 'text is escaped');
+    assert.match(made[0].innerHTML, /Heads up/);
+    assert.match(made[0].innerHTML, /Review before importing/);
+    assert.match(made[0].innerHTML, />Import</);
+    made[0].handlers.click({ target: { closest: () => ({ dataset: { act: 'yes' } }) } });
+    assert.equal(await yes, true);
+    const no = confirmImport(rb, [], 'Save');
+    assert.match(made[1].innerHTML, /Review before saving/);
+    assert.match(made[1].innerHTML, />Save</);
+    made[1].handlers.click({ target: { closest: () => ({ dataset: { act: 'no' } }) } });
+    assert.equal(await no, false);
+    assert.ok(made[1].removed);
 });

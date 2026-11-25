@@ -495,3 +495,52 @@ export function dryRun(entries, text, source, rng = Math.random, options = {}) {
         .map((rule) => ({ book: rb.name, rule: rule.name })));
     return { log, prompt: buildPrompt(copies), pendingAi };
 }
+
+// ---------- import safety ----------
+
+const SUSPICIOUS = [
+    [/\b(ignore|disregard|forget|override|bypass)\b[^.]{0,40}\b(previous|prior|above|earlier|all|any|your|the)\b[^.]{0,40}\b(instruction|prompt|rule|guideline|message)s?\b/i, 'tries to override other instructions'],
+    [/\b(system|developer)\s+(prompt|message|instruction)s?\b/i, 'mentions system or developer instructions'],
+    [/\b(reveal|repeat|print|leak|exfiltrate)\b[^.]{0,40}\b(prompt|instruction|key|password|secret|token)s?\b/i, 'asks to reveal hidden information'],
+    [/https?:\/\//i, 'contains a web link'],
+    [/<\s*\/?\s*(system|assistant|script)\b/i, 'contains role or script-like markup'],
+];
+
+/** Reason a piece of prompt text looks risky, or '' if nothing stood out. A hint only, never a guarantee. */
+export function suspiciousReason(text) {
+    for (const [re, reason] of SUSPICIOUS) if (re.test(text)) return reason;
+    return String(text).length > 300 ? 'is unusually long (costs tokens every turn)' : '';
+}
+
+/** Everything in a rulebook that is sent to an AI model, so it can be reviewed before use. */
+export function promptTexts(rb) {
+    const meter = (id) => rb.meters.find((m) => m.id === id)?.name ?? id;
+    return [
+        { where: 'Rulebook name shown to the AI', text: rb.name },
+        { where: 'Rulebook identifier sent to the judge model', text: rb.id },
+        ...rb.meters.flatMap((m) => [
+            { where: 'Meter name shown to the AI', text: m.name },
+            { where: 'Meter identifier sent to the judge model', text: m.id },
+        ]),
+        ...rb.influences.filter((i) => i.status).map((i) => ({
+            where: `Status shown to your AI while ${meter(i.meter)} is ${i.min} to ${i.max}`, text: i.status,
+        })),
+        ...rb.influences.filter((i) => i.text).map((i) => ({
+            where: `Sent to your AI every turn while ${meter(i.meter)} is ${i.min} to ${i.max}`, text: i.text,
+        })),
+        ...rb.rules.filter((r) => r.aiCondition).flatMap((r) => [
+            { where: 'Rule identifier sent to the judge model', text: r.id },
+            { where: `AI condition of rule "${r.name}" (sent to the judge model)`, text: r.aiCondition },
+            ...(r.conditions ? [{
+                where: `Deterministic conditions of rule "${r.name}" (sent to the judge model)`,
+                text: JSON.stringify(r.conditions),
+            }] : []),
+        ]),
+    ].map((item) => ({ ...item, warning: suspiciousReason(item.text) }));
+}
+
+/** Prompt texts that are new or changed compared with an already-saved rulebook (all of them when existing is missing). */
+export function changedPromptTexts(rb, existing) {
+    const known = new Set(existing ? promptTexts(existing).map((i) => i.text) : []);
+    return promptTexts(rb).filter((i) => !known.has(i.text));
+}

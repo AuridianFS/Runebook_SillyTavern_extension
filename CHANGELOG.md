@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.1
+- Import/save review: before a new or changed rulebook is imported or saved, Runebook shows the AI-facing text, with warnings for common prompt-injection red flags and very long text.
+- Runebook meter and influence context is sent in the USER role rather than the SYSTEM role; the review includes AI-facing labels and judge-model data.
+- Added MIT LICENSE, NOTICE.md (independent project, SpicyChat attribution and disclaimer) and README sections on safety, attribution and license.
+
 ## 2.4.0
 - Guided rulebook builder: a form for meters, rules (keywords, conditions, AI conditions, cooldowns, events), milestones and influences, with readable errors and a live JSON preview. No JSON knowledge needed. Raw JSON editing remains under "Advanced".
 - "Copy AI instructions" button: copies your tracker idea plus the complete, current format specification so any AI assistant can write a valid rulebook. The same text ships as RULEBOOK_SPEC.md.

@@ -4,9 +4,9 @@
  * influence rules tell the character how to behave at different levels.
  */
 import {
-    applyMessage, buildPrompt, createState, dryRun, getInfluence, normalizeRulebook, repairState,
+    applyMessage, buildPrompt, changedPromptTexts, createState, dryRun, getInfluence, normalizeRulebook, repairState,
 } from './engine.js';
-import { copyText, openBuilder } from './builder.js';
+import { confirmImport, copyText, openBuilder } from './builder.js';
 import { buildAiPrompt } from './spec.js';
 
 const MODULE = 'runebook';
@@ -66,7 +66,7 @@ function updatePrompt() {
     const text = settings().inject ? full : '';
     renderPreview(full, settings().inject);
     const position = c.extension_prompt_types?.IN_CHAT ?? 1;
-    const role = c.extension_prompt_roles?.SYSTEM ?? 0;
+    const role = c.extension_prompt_roles?.USER ?? 1;
     c.setExtensionPrompt(PROMPT_KEY, text, position, 1, false, role);
 }
 
@@ -329,6 +329,15 @@ function onChatChanged() {
 }
 
 // ---------- rulebook management ----------
+
+/** Ask the user to review AI-facing text that is new or changed. Returns false if they decline. */
+async function reviewUntrusted(raw, action) {
+    const rb = normalizeRulebook(raw);
+    const existing = settings().rulebooks.find((book) => book.id === rb.id);
+    const items = changedPromptTexts(rb, existing);
+    if (!items.length) return true;
+    return confirmImport(rb, items, action);
+}
 
 function addRulebook(raw) {
     const rb = normalizeRulebook(raw);
@@ -595,8 +604,9 @@ function validateEditorBook() {
     return rb;
 }
 
-function saveEditorBook() {
+async function saveEditorBook() {
     const rb = validateEditorBook();
+    if (!(await reviewUntrusted(rb, 'Save'))) return;
     const saved = addRulebook(rb);
     editorTargetId = saved.id;
     renderDrawer();
@@ -706,6 +716,7 @@ function buildDrawer() {
             <div class="flex-container">
                 <div class="menu_button" id="runebook_new" title="Build a rulebook with a form: no JSON needed">New rulebook (guided)</div>
                 <div class="menu_button" id="runebook_import" title="Import a rulebook .json file">Import JSON</div>
+                <small>Only use rulebooks you trust: their text is added to your AI's user-role prompt context. You will see changed text before importing or saving.</small>
                 <div class="menu_button" id="runebook_reset" title="Set this chat's meters back to their starting values">Reset meters</div>
                 <div class="menu_button" id="runebook_rescan" title="Replay the whole chat, greeting included, to rebuild meters. Dice rules re-roll.">Rescan chat</div>
             </div>
@@ -781,6 +792,7 @@ function bindDrawer() {
         if (!file) return;
         let raw;
         try { raw = JSON.parse(await file.text()); } catch { throw new Error('That file is not valid JSON'); }
+        if (!(await reviewUntrusted(raw, 'Import'))) return;
         const rb = addRulebook(raw);
         toast('success', `Imported "${rb.name}"`);
     }));

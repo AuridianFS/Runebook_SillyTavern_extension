@@ -12,7 +12,7 @@ Runebook is a SillyTavern extension that tracks story values ("meters") from cha
 
 - Runebook reads each NEW chat message (from the user and from the AI character) and checks every rule, in order.
 - A rule that matches changes ONE meter. Values are always clamped between the meter's min and max.
-- Meters are shown on screen and injected into the AI prompt every turn, plus any matching influence "text". Keep influence text short (tokens cost money).
+- Meters, their names and matching influence status/text are shown in user-role prompt context every turn. Keep influence text short (tokens cost money); imported and edited AI-facing text is reviewed before saving.
 - The AI never edits meters directly. It can only help decide whether an "aiCondition" rule applied, and the rule's own action is what changes the meter.
 - Text matching is whole-word and case-insensitive: "hi" does not match "this". Use phrases for precision.
 - {{char}} and {{user}} work inside influence text.

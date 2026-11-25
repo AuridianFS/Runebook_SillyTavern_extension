@@ -1,6 +1,6 @@
 # Runebook
 
-SpicyChat-style Rulebooks for SillyTavern. A rulebook has:
+Rulebooks for SillyTavern, inspired by the Rulebooks feature of SpicyChat (an independent, unofficial project; see [NOTICE.md](NOTICE.md)). A rulebook has:
 
 - **Meters** that store a score (bar, pips or number).
 - **Rules** that move a meter when keywords or a regex appear, conditions pass, or an optional AI condition matches.
@@ -118,3 +118,13 @@ Use the **in-app rulebook editor** to create or edit a rulebook as JSON; Validat
 ## Development
 
 `engine.js` is pure logic with tests: `node --test tests/engine.test.mjs`. `index.js` is the SillyTavern UI layer.
+
+## Safety: only import rulebooks you trust
+
+A rulebook's influence `text` is added to your AI's user-role prompt context every turn, and AI conditions are sent to the judge model. A shared rulebook could therefore contain instructions meant to steer your AI. Runebook shows the AI-facing rulebook text, with warnings for common red flags, **before** you import or save a new or changed rulebook. These warnings are hints, not a guarantee, and user-role placement does not prevent all prompt injection. You can always check what is being sent in **Prompt preview**, and untick a rulebook to stop it.
+
+## Attribution and license
+
+Runebook is an independent, unofficial project and is not affiliated with or endorsed by SpicyChat. The idea of Rulebooks comes from SpicyChat, which the author does not own; Runebook was built from SpicyChat's public documentation and contains none of its code, assets or documentation text. See [NOTICE.md](NOTICE.md).
+
+Released under the [MIT License](LICENSE), which covers only this repository's original code and files.

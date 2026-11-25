@@ -37,3 +37,7 @@ and require explicit review or trust before activating imported rulebooks.
 This was a static-only review. It does not establish that the extension is
 free of all vulnerabilities or malicious behavior; dynamic behavior, builds,
 and third-party SillyTavern runtime interactions were not exercised.
+
+## Status
+
+Mitigated in the combined 2.4.1 update: imported or edited rulebooks require review of AI-facing text (with heuristic warnings), and Runebook's extension prompt is sent in the USER role rather than the SYSTEM role. This lowers the prompt's authority but cannot guarantee that a model will ignore malicious text. The review also covers labels and judge-model data that are included in prompts.
