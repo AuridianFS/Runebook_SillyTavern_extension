@@ -1,8 +1,16 @@
 # Changelog
 
+## 2.5.0
+- Retained the 2.4.1 prompt-injection mitigation: rulebook context uses the USER role, and import/save review covers AI-facing labels and judge-model data.
+- Animated tracker visuals (all optional). Meters can set `fill` (`solid`, `gradient`, `animated`), `effect` (`none`, `shimmer`, `pulse`, `glow`) and up to four colors: `color` (A), `colorB`, `colorC`, `colorD`, spread evenly along the gradient. Works for bars, sliders and pips.
+- New drawer settings: Animations on/off, plus a default fill, effect and colors for meters that set none of their own. The guided builder has fields for all of it and warns (without blocking) about colors that may be hard to see on dark or light themes.
+- CSS-only animation: no JavaScript timers. Respects the system "reduce motion" setting and the new Animations: Off switch. Glow is static.
+- Existing rulebooks look exactly as before (solid fill, no effect is the default). The HUD no longer rebuilds when nothing changed, so animations are not restarted needlessly.
+- CSS variables for custom styling: `--rb-a`, `--rb-b`, `--rb-last`, `--rb-grad`.
+- Added the Coin Purse example (separate meters per coin type, plus an animated Luck bar).
+
 ## 2.4.1
-- Import/save review: before a new or changed rulebook is imported or saved, Runebook shows the AI-facing text, with warnings for common prompt-injection red flags and very long text.
-- Runebook meter and influence context is sent in the USER role rather than the SYSTEM role; the review includes AI-facing labels and judge-model data.
+- Import review: before a new or changed rulebook is imported, Runebook shows all text that will be sent to the AI, with warnings for common prompt-injection red flags and very long text.
 - Added MIT LICENSE, NOTICE.md (independent project, SpicyChat attribution and disclaimer) and README sections on safety, attribution and license.
 
 ## 2.4.0

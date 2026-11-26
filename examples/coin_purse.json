@@ -1,0 +1,20 @@
+{
+  "name": "Coin Purse",
+  "meters": [
+    { "id": "gold", "name": "Gold", "type": "number", "min": 0, "start": 20, "icon": "🪙", "color": "#ffcc00", "effect": "glow" },
+    { "id": "silver", "name": "Silver", "type": "number", "min": 0, "start": 15, "icon": "🪙", "color": "#c0c0c0" },
+    { "id": "copper", "name": "Copper", "type": "number", "min": 0, "start": 30, "icon": "🪙", "color": "#b87333" },
+    { "id": "luck", "name": "Luck", "type": "bar", "min": 0, "max": 100, "start": 50,
+      "color": "#c62828", "colorB": "#ffb300", "colorC": "#43a047", "fill": "animated", "effect": "shimmer" }
+  ],
+  "rules": [
+    { "name": "Found gold", "meter": "gold", "keywords": ["gold coin", "gold piece"], "on": "ai", "change": "1d6" },
+    { "name": "Paid in silver", "meter": "silver", "keywords": ["pays in silver", "pay in silver"], "change": -3 },
+    { "name": "Lucky break", "meter": "luck", "keywords": ["lucky", "fortune smiles"], "change": 10 },
+    { "name": "Bad omen", "meter": "luck", "keywords": ["unlucky", "bad omen"], "change": -10 }
+  ],
+  "milestones": [],
+  "influences": [
+    { "meter": "luck", "min": 0, "max": 25, "status": "Cursed", "text": "{{char}} feels as if fortune is against them." }
+  ]
+}

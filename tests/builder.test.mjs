@@ -108,3 +108,47 @@ test('import review dialog resolves true on Import and false on Cancel', async (
     assert.equal(await no, false);
     assert.ok(made[1].removed);
 });
+
+import { resolveLook, pipVars, normalizeLook, contrastWarning, DEFAULT_LOOK } from '../visuals.js';
+
+const base = { id: 'm', name: 'M', type: 'bar', min: 0, max: 10, start: 5 };
+const wrap = (m) => ({ name: 'T', meters: [{ ...base, ...m }], rules: [] });
+
+test('meters without look fields stay plain', () => {
+    const m = normalizeRulebook(wrap({})).meters[0];
+    for (const k of ['fill', 'effect', 'colorB', 'colorC', 'colorD']) assert.equal(m[k], undefined);
+    const v = resolveLook(m, DEFAULT_LOOK);
+    assert.deepEqual(v.classes, []);
+});
+
+test('new look fields validate and round-trip through the form', () => {
+    const raw = wrap({ color: '#c62828', colorB: '#ffb300', colorC: 'green', colorD: '#00f', fill: 'animated', effect: 'shimmer' });
+    const rb = normalizeRulebook(raw);
+    assert.equal(rb.meters[0].colorD, '#00f');
+    const back = draftToRaw(rulebookToDraft(rb));
+    assert.deepEqual(normalizeRulebook(back).meters[0], rb.meters[0]);
+    assert.throws(() => normalizeRulebook(wrap({ fill: 'rainbow' })), /fill/);
+    assert.throws(() => normalizeRulebook(wrap({ effect: 'sparkle' })), /effect/);
+    assert.throws(() => normalizeRulebook(wrap({ colorC: 'url(x)' })), /colorC/);
+});
+
+test('resolveLook: meter wins over global, influence color replaces A, stops capped at four', () => {
+    const m = { ...base, color: '#111', colorB: '#222', colorC: '#333', colorD: '#444', fill: 'gradient' };
+    const v = resolveLook(m, { ...DEFAULT_LOOK, fill: 'animated', colorB: '#999' }, '#abc');
+    assert.deepEqual(v.stops, ['#abc', '#222', '#333', '#444']);
+    assert.ok(v.classes.includes('rb-fill-gradient') && !v.classes.includes('rb-fill-animated'));
+    const g = resolveLook(base, { ...DEFAULT_LOOK, fill: 'animated', effect: 'glow', color: '#f00', colorB: '#00f' });
+    assert.ok(g.classes.includes('rb-fill-animated') && g.classes.includes('rb-fx-glow'));
+    assert.ok(g.vars.some((x) => x === '--rb-grad:#f00,#00f,#f00'));
+});
+
+test('pipVars spreads stops across pips; normalizeLook rejects junk; contrast hints', () => {
+    assert.match(pipVars(0, 5, ['#a', '#b', '#c']), /--pa:#a;--pb:#b;--p:0/);
+    assert.match(pipVars(4, 5, ['#a', '#b', '#c']), /--pa:#b;--pb:#c;--p:1/);
+    assert.equal(pipVars(2, 5, ['#a']), '--i:2');
+    assert.deepEqual(normalizeLook({ fill: 'x', effect: 'y', color: 'url(', colorB: 5 }), DEFAULT_LOOK);
+    assert.match(contrastWarning('#000'), /dark/);
+    assert.match(contrastWarning('#fffffe'), /light/);
+    assert.equal(contrastWarning('#ff6b9d'), '');
+    assert.match(validateDraft(rulebookToDraft(normalizeRulebook(wrap({ color: '#010101' })))).summary, /Note:/);
+});

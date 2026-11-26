@@ -33,6 +33,55 @@
 .rb-status { font-style: italic; opacity: 0.8; }
 .rb-desc { width: 100%; font-size: 0.85em; opacity: 0.7; font-style: italic; }
 
+/* ---- Animated visuals (2.5.0). Everything is opt-in via classes; with none set the look above is unchanged. ----
+   Override from Custom CSS if you like: --rb-a (Color A), --rb-b, --rb-last, --rb-grad (list of stops). */
+/* Gradient fill: bar fill, slider track, pips */
+.rb-fill-gradient .rb-fill { background: linear-gradient(90deg, var(--rb-grad)); }
+.rb-fill-gradient.rb-slider { background: linear-gradient(90deg, var(--rb-grad)); }
+.rb-fill-gradient .rb-knob, .rb-fill-animated .rb-knob { box-shadow: 0 0 0 2px var(--SmartThemeBlurTintColor), 0 0 0 3px var(--SmartThemeBodyColor); }
+.rb-fill-gradient .rb-pip.on, .rb-fill-animated .rb-pip.on {
+    color: var(--pa, var(--rb-color, var(--SmartThemeQuoteColor)));
+    color: color-mix(in srgb, var(--pa, var(--rb-color, var(--SmartThemeQuoteColor))), var(--pb, var(--rb-last)) calc(var(--p, 0) * 100%));
+}
+
+/* Animated gradient: slow flow, seamless because the list loops back to Color A */
+.rb-fill-animated .rb-fill, .rb-fill-animated.rb-slider {
+    background: linear-gradient(90deg, var(--rb-grad)) 0 0 / 200% 100% repeat-x;
+    animation: rb-flow 6s linear infinite; animation-delay: var(--rb-delay, 0s);
+}
+.rb-fill-animated .rb-pip.on { animation: rb-pipflow 6s ease-in-out infinite; animation-delay: calc(var(--rb-delay, 0s) - var(--i, 0) * 0.25s); }
+@keyframes rb-flow { to { background-position: 200% 0; } }
+@keyframes rb-pipflow { 50% { color: var(--rb-last); } }
+
+/* Effects */
+.rb-fx-shimmer .rb-fill, .rb-fx-shimmer.rb-slider { position: relative; }
+.rb-fx-shimmer .rb-fill::after, .rb-fx-shimmer.rb-slider::after {
+    content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, 0.35) 50%, transparent 65%) 150% 0 / 250% 100% no-repeat;
+    animation: rb-sheen 3s ease-in-out infinite; animation-delay: var(--rb-delay, 0s);
+}
+.rb-fx-shimmer .rb-pip.on { animation: rb-pipshine 3s ease-in-out infinite; animation-delay: calc(var(--rb-delay, 0s) - var(--i, 0) * 0.15s); }
+@keyframes rb-sheen { 0% { background-position: 150% 0; } 60%, 100% { background-position: -50% 0; } }
+@keyframes rb-pipshine { 0%, 100% { filter: none; } 20% { filter: brightness(1.5); } }
+
+.rb-fx-pulse .rb-fill, .rb-fx-pulse .rb-knob, .rb-fx-pulse .rb-pip.on { animation: rb-pulse 3s ease-in-out infinite; animation-delay: var(--rb-delay, 0s); }
+.rb-fx-pulse.rb-fill-animated .rb-fill { animation: rb-flow 6s linear infinite, rb-pulse 3s ease-in-out infinite; }
+@keyframes rb-pulse { 50% { opacity: 0.7; } }
+
+/* Animated gradient combined with an effect on pips: run both animations */
+.rb-fill-animated.rb-fx-shimmer .rb-pip.on { animation: rb-pipflow 6s ease-in-out infinite, rb-pipshine 3s ease-in-out infinite; }
+.rb-fill-animated.rb-fx-pulse .rb-pip.on { animation: rb-pipflow 6s ease-in-out infinite, rb-pulse 3s ease-in-out infinite; }
+
+/* Glow is static, so it is cheap and needs no reduced-motion handling */
+.rb-fx-glow .rb-fill, .rb-fx-glow .rb-knob { box-shadow: 0 0 6px 1px var(--rb-color, var(--SmartThemeQuoteColor)); }
+.rb-fx-glow .rb-pip.on, .rb-fx-glow.rb-num { text-shadow: 0 0 6px var(--rb-color, var(--SmartThemeQuoteColor)); }
+
+/* Respect the system setting and the extension's own "Animations: Off". Animated gradients stay as static gradients. */
+@media (prefers-reduced-motion: reduce) {
+    #runebook_hud *, #runebook_hud *::after { animation: none !important; transition: none !important; }
+}
+#runebook_hud.rb-noanim *, #runebook_hud.rb-noanim *::after { animation: none !important; }
+
 .rb-chips { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 4px; }
 .rb-chip { --rb-color: var(--SmartThemeQuoteColor); white-space: nowrap; }
 .rb-chip b { color: var(--rb-color); }

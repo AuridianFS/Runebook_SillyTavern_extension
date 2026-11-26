@@ -9,6 +9,8 @@ export const SOURCES = ['user', 'ai', 'both'];
 export const FREQUENCIES = ['always', 'once_per_chat'];
 export const PIP_SHAPES = ['circle', 'heart', 'star', 'square'];
 export const BAR_STYLES = ['bar', 'slider'];
+export const FILL_STYLES = ['solid', 'gradient', 'animated'];
+export const EFFECTS = ['none', 'shimmer', 'pulse', 'glow'];
 export const CONDITION_OPERATORS = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte'];
 const COLOR_RE = /^(#[0-9a-f]{3,8}|[a-z]{3,20})$/i;
 const ICON_RE = /^[a-z0-9 -]{1,40}$/;
@@ -81,6 +83,26 @@ function normalizeMeter(raw, i) {
     if (raw.style != null) {
         if (!BAR_STYLES.includes(raw.style)) throw new Error(`Meter "${name}" style must be one of ${BAR_STYLES.join(', ')}`);
         meter.style = raw.style;
+    }
+    if (raw.colorB != null) {
+        if (!COLOR_RE.test(String(raw.colorB))) throw new Error(`Meter "${name}" colorB must be like "#ff6b9d" or "red"`);
+        meter.colorB = String(raw.colorB);
+    }
+    if (raw.colorC != null) {
+        if (!COLOR_RE.test(String(raw.colorC))) throw new Error(`Meter "${name}" colorC must be like "#ff6b9d" or "red"`);
+        meter.colorC = String(raw.colorC);
+    }
+    if (raw.colorD != null) {
+        if (!COLOR_RE.test(String(raw.colorD))) throw new Error(`Meter "${name}" colorD must be like "#ff6b9d" or "red"`);
+        meter.colorD = String(raw.colorD);
+    }
+    if (raw.fill != null) {
+        if (!FILL_STYLES.includes(raw.fill)) throw new Error(`Meter "${name}" fill must be one of ${FILL_STYLES.join(', ')}`);
+        meter.fill = raw.fill;
+    }
+    if (raw.effect != null) {
+        if (!EFFECTS.includes(raw.effect)) throw new Error(`Meter "${name}" effect must be one of ${EFFECTS.join(', ')}`);
+        meter.effect = raw.effect;
     }
 
     if (raw.decay != null) {

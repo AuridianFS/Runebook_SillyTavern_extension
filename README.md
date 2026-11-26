@@ -78,6 +78,22 @@ Then open the **Runebook** drawer in the Extensions panel, add an example or imp
 
 `meter` in rules and influences can be the meter's `id` or `name`.
 
+## Animated visuals
+
+Meters can have a gradient or a gentle animation. All of it is optional; without these fields a meter looks as before.
+
+```json
+{ "id": "luck", "name": "Luck", "type": "bar", "min": 0, "max": 100, "start": 50,
+  "color": "#c62828", "colorB": "#ffb300", "colorC": "#43a047", "fill": "animated", "effect": "shimmer" }
+```
+
+- `fill`: `solid` (default), `gradient`, or `animated` (the gradient slowly flows).
+- `effect`: `none` (default), `shimmer`, `pulse`, or `glow`.
+- `color`, `colorB`, `colorC`, `colorD`: up to four gradient colors (A to D), spread evenly. Pips step through them; emoji and icon pips cannot be tinted, so they use Color A.
+- Drawer: **Animations** can be switched off, and a default look can be set for meters without their own. Animations are pure CSS, pause when your system asks for reduced motion, and cost nothing when off.
+- Several coin types (gold, silver, copper) work best as separate meters, each with its own color. See `examples/coin_purse.json`.
+- Custom CSS can override `--rb-a`, `--rb-b`, `--rb-last` and `--rb-grad` on `.rb-bar`, `.rb-slider` or `.rb-pips`.
+
 ## How it works and what it costs
 
 - **No AI calls by default.** Deterministic rules use plain text and meter conditions on each new message. AI calls happen only when AI-assisted mode is enabled and an active rule has `aiCondition`.

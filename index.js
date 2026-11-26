@@ -6,16 +6,18 @@
 import {
     applyMessage, buildPrompt, changedPromptTexts, createState, dryRun, getInfluence, normalizeRulebook, repairState,
 } from './engine.js';
+import { DEFAULT_LOOK, normalizeLook, resolveLook, pipVars } from './visuals.js';
 import { confirmImport, copyText, openBuilder } from './builder.js';
 import { buildAiPrompt } from './spec.js';
 
 const MODULE = 'runebook';
 const PROMPT_KEY = 'runebook_prompt';
-const EXAMPLES = ['blank_template', 'affection_tracker', 'wallet_tracker', 'dice_game'];
+const EXAMPLES = ['blank_template', 'affection_tracker', 'wallet_tracker', 'coin_purse', 'dice_game'];
 const DEFAULTS = {
     enabled: true, hud: true, notes: true, inject: true, aiAssist: false,
     aiProfileId: '', aiBaseUrl: '', aiModel: '',
     dock: 'right', compact: 'auto', collapsed: {}, rulebooks: [],
+    animations: 'auto', look: { ...DEFAULT_LOOK },
 };
 const HUD_WIDTH = 230;
 const PIP_GLYPHS = { circle: '●', heart: '♥', star: '★', square: '■' };
@@ -32,6 +34,7 @@ function esc(s) {
 function settings() {
     const { extensionSettings } = ctx();
     extensionSettings[MODULE] = { ...DEFAULTS, ...extensionSettings[MODULE] };
+    extensionSettings[MODULE].look = normalizeLook(extensionSettings[MODULE].look);
     return extensionSettings[MODULE];
 }
 
@@ -438,20 +441,21 @@ function iconHtml(icon) {
 }
 
 function meterHtml(meter, value, color) {
-    const style = color ? ` style="--rb-color:${esc(color)}"` : '';
+    const v = resolveLook(meter, settings().look, color);
+    const attr = (cls) => ` class="${cls}${v.classes.length ? ' ' + v.classes.join(' ') : ''}" style="${esc(v.vars.join(';'))}"`;
     if (meter.type === 'pips') {
         const total = Math.min(Math.round(meter.max - meter.min), 20);
         const filled = Math.round(value - meter.min);
         const glyph = meter.icon ? iconHtml(meter.icon) : PIP_GLYPHS[meter.pip ?? 'circle'];
-        const pips = Array.from({ length: total }, (_, i) => `<span class="rb-pip${i < filled ? ' on' : ''}">${glyph}</span>`).join('');
-        return `<div class="rb-pips"${style}>${pips}</div>`;
+        const pips = Array.from({ length: total }, (_, i) => `<span class="rb-pip${i < filled ? ' on' : ''}" style="${esc(pipVars(i, total, v.stops))}">${glyph}</span>`).join('');
+        return `<div${attr('rb-pips')}>${pips}</div>`;
     }
-    if (meter.type === 'number') return `<span class="rb-num"${style}>${esc(value)}</span>`;
+    if (meter.type === 'number') return `<span${attr('rb-num')}>${esc(value)}</span>`;
     const pct = ((value - meter.min) / (meter.max - meter.min)) * 100;
     if (meter.style === 'slider') {
-        return `<div class="rb-slider"${style}><div class="rb-knob" style="left:${pct}%"></div></div><span class="rb-num">${esc(value)}</span>`;
+        return `<div${attr('rb-slider')}><div class="rb-knob" style="left:${pct}%"></div></div><span class="rb-num">${esc(value)}</span>`;
     }
-    return `<div class="rb-bar"${style}><div class="rb-fill" style="width:${pct}%"></div></div><span class="rb-num">${esc(value)}</span>`;
+    return `<div${attr('rb-bar')}><div class="rb-fill" style="width:${pct}%"></div></div><span class="rb-num">${esc(value)}</span>`;
 }
 
 function isCompact(rbId, count) {
@@ -486,8 +490,8 @@ function bookHtml({ rb, state }, count) {
 
 function positionHud(hud) {
     const dock = settings().dock;
-    hud.className = `rb-dock-${dock}`;
-    hud.style.cssText = '';
+    hud.className = `rb-dock-${dock}${settings().animations === 'off' ? ' rb-noanim' : ''}`;
+    hud.style.cssText = `--rb-delay:${hud.dataset.rbPhase ?? 0}s`;
     if (dock === 'float') return;
     const sheld = $id('sheld')?.getBoundingClientRect();
     const room = sheld ? (dock === 'left' ? sheld.left : window.innerWidth - sheld.right) : 0;
@@ -517,8 +521,15 @@ function renderHud() {
         });
         document.body.appendChild(hud);
     }
-    hud.innerHTML = entries.map((e) => bookHtml(e, entries.length)).join('')
+    const html = entries.map((e) => bookHtml(e, entries.length)).join('')
         + (notes.length ? `<div class="rb-notes">${notes.map((n) => `<div>${esc(n)}</div>`).join('')}</div>` : '');
+    // Only touch the DOM when something changed, so CSS animations are not restarted for no reason.
+    if (hud.dataset.rbHtml !== html) {
+        hud.innerHTML = html;
+        hud.dataset.rbHtml = html;
+        // Keeps looping animations roughly in phase across re-renders (all durations divide 12s).
+        hud.dataset.rbPhase = (-((Date.now() / 1000) % 12)).toFixed(2);
+    }
     positionHud(hud);
 }
 
@@ -536,6 +547,11 @@ function renderDrawer() {
     $id('runebook_ai_model').value = s.aiModel;
     $id('runebook_dock').value = s.dock;
     $id('runebook_compact').value = s.compact;
+    $id('runebook_anim').value = s.animations;
+    $id('runebook_look_fill').value = s.look.fill;
+    $id('runebook_look_effect').value = s.look.effect;
+    $id('runebook_look_a').value = s.look.color;
+    $id('runebook_look_b').value = s.look.colorB;
 
     const profileSelect = $id('runebook_ai_profile');
     const selectedProfile = s.aiProfileId;
@@ -705,6 +721,22 @@ function buildDrawer() {
                     <option value="auto">Auto (compact if 3+)</option><option value="off">Always full</option><option value="on">Always compact</option>
                 </select></label>
             </div>
+            <div class="flex-container">
+                <label>Animations <select id="runebook_anim" class="text_pole">
+                    <option value="auto">On (follows system motion setting)</option><option value="off">Off</option>
+                </select></label>
+            </div>
+            <small>Default look for meters that do not set their own. Solid with no effect is the original look. Animations are CSS-only and pause automatically if your system asks for reduced motion.</small>
+            <div class="flex-container">
+                <label>Fill <select id="runebook_look_fill" class="text_pole">
+                    <option value="solid">Solid</option><option value="gradient">Gradient</option><option value="animated">Animated gradient</option>
+                </select></label>
+                <label>Effect <select id="runebook_look_effect" class="text_pole">
+                    <option value="none">None</option><option value="shimmer">Shimmer</option><option value="pulse">Pulse</option><option value="glow">Glow</option>
+                </select></label>
+                <label>Color A <input id="runebook_look_a" class="text_pole" placeholder="theme color"></label>
+                <label>Color B <input id="runebook_look_b" class="text_pole" placeholder="same as A"></label>
+            </div>
 
             <h4>Rulebooks</h4>
             <small>Tick a rulebook to attach it to the current chat.</small>
@@ -846,6 +878,18 @@ function bindDrawer() {
     $id('runebook_compact').addEventListener('change', (e) => {
         settings().compact = e.target.value; settings().collapsed = {}; save(); renderHud();
     });
+
+    $id('runebook_anim').addEventListener('change', (e) => { settings().animations = e.target.value; save(); renderHud(); });
+    const lookChange = () => {
+        settings().look = normalizeLook({
+            fill: $id('runebook_look_fill').value, effect: $id('runebook_look_effect').value,
+            color: $id('runebook_look_a').value.trim(), colorB: $id('runebook_look_b').value.trim(),
+        });
+        save(); renderHud();
+    };
+    for (const id of ['runebook_look_fill', 'runebook_look_effect', 'runebook_look_a', 'runebook_look_b']) {
+        $id(id).addEventListener('change', lookChange);
+    }
 
     $id('runebook_list').addEventListener('click', (e) => {
         const item = e.target.closest('.rb-item');
