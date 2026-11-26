@@ -5,9 +5,9 @@ Copyright (c) 2026 AuridianFS
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+to use, copy, modify, merge, publish, copies of the Software, including improved or feature-added copies, and to
+permit persons to whom the Software is furnished to do so, subject to the
+following conditions:
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
@@ -19,3 +19,12 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+NOTICE
+
+This project is an independent extension for use with SillyTavern. It is not
+affiliated with or endorsed by SpicyChat.ai. The project's concept was informed
+by reference to a function on SpicyChat.ai, but no ownership of, source code
+from, or rights in SpicyChat.ai or its copyrighted material are claimed or
+transferred. The extension consists of the author's own original work with
+assistance from local and cloud-based coding agents.
