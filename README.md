@@ -1,6 +1,7 @@
 # Runebook
 
-Rulebooks for SillyTavern, inspired by the Rulebooks feature of SpicyChat (an independent, unofficial project; see [NOTICE.md](NOTICE.md)). A rulebook has:
+Rulebooks for SillyTavern, inspired by the Rulebooks feature of SpicyChat (an independent, unofficial project; see [NOTICE.md](NOTICE.md)).
+A rulebook has:
 
 - **Meters** that store a score (bar, pips or number).
 - **Rules** that move a meter when keywords or a regex appear, conditions pass, or an optional AI condition matches.
