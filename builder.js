@@ -3,7 +3,7 @@
  * the second half is the modal form, built with event delegation.
  */
 import { normalizeRulebook, slugify } from './engine.js';
-import { contrastWarning } from './visuals.js';
+import { PRESETS, contrastWarning, parseColors } from './visuals.js';
 
 const OP_TO_SYMBOL = { eq: '=', neq: '!=', gt: '>', gte: '>=', lt: '<', lte: '<=' };
 const SYMBOL_TO_OP = { '=': 'eq', '==': 'eq', '!=': 'neq', '>': 'gt', '>=': 'gte', '<': 'lt', '<=': 'lte' };
@@ -55,11 +55,9 @@ export const FIELDS = {
         { k: 'max', l: 'Max', t: 'num' },
         { k: 'start', l: 'Start', t: 'num' },
         { k: 'icon', l: 'Icon (emoji or fa-solid fa-heart)', t: 'text' },
-        { k: 'color', l: 'Color A (#ff6b9d)', t: 'text' },
-        { k: 'colorB', l: 'Color B (gradient, optional)', t: 'text' },
-        { k: 'colorC', l: 'Color C (optional)', t: 'text' },
-        { k: 'colorD', l: 'Color D (optional)', t: 'text' },
-        { k: 'fill', l: 'Fill style', t: 'select', o: ['', 'solid', 'gradient', 'animated'] },
+        { k: 'preset', l: 'Preset look (fills the fields below)', t: 'select', o: ['', ...Object.keys(PRESETS)] },
+        { k: 'colors', l: 'Colors (comma-separated, up to 26)', t: 'text', wide: true, help: 'One color = solid. Two or more = a gradient (or bands, with Fill style "stepped"). Example: #c62828, #ffb300, green' },
+        { k: 'fill', l: 'Fill style', t: 'select', o: ['', 'solid', 'gradient', 'animated', 'stepped'] },
         { k: 'effect', l: 'Effect', t: 'select', o: ['', 'none', 'shimmer', 'pulse', 'glow'] },
         { k: 'style', l: 'Bar style', t: 'select', o: ['', 'bar', 'slider'] },
         { k: 'pip', l: 'Pip shape (pips only)', t: 'select', o: ['', 'circle', 'heart', 'star', 'square'] },
@@ -113,7 +111,8 @@ export function rulebookToDraft(rb) {
         id: rb.id,
         name: rb.name,
         meters: rb.meters.map((m) => ({
-            ...Object.fromEntries(['id', 'name', 'type', 'min', 'max', 'start', 'icon', 'color', 'colorB', 'colorC', 'colorD', 'fill', 'effect', 'style', 'pip'].map((k) => [k, str(m[k])])),
+            ...Object.fromEntries(['id', 'name', 'type', 'min', 'max', 'start', 'icon', 'fill', 'effect', 'style', 'pip'].map((k) => [k, str(m[k])])),
+            colors: (m.colors ?? (m.color ? [m.color] : [])).join(', '),
             decay_after: str(m.decay?.after), decay_amount: str(m.decay?.amount),
         })),
         rules: rb.rules.map((r) => ({
@@ -150,7 +149,9 @@ export function draftToRaw(draft) {
     for (const m of draft.meters) {
         const o = { id: m.id || undefined, name: m.name, type: m.type || 'bar' };
         for (const k of ['min', 'max', 'start']) setIf(o, k, num(m[k], `${m.name || 'Meter'} ${k}`));
-        for (const k of ['icon', 'color', 'colorB', 'colorC', 'colorD', 'fill', 'effect', 'style', 'pip']) setIf(o, k, m[k]);
+        for (const k of ['icon', 'fill', 'effect', 'style', 'pip']) setIf(o, k, m[k]);
+        const cols = parseColors(m.colors);
+        if (cols.length === 1) o.color = cols[0]; else if (cols.length > 1) o.colors = cols;
         const after = num(m.decay_after, 'Drift after');
         if (after !== undefined) o.decay = { after, amount: num(m.decay_amount, 'Drift amount') ?? 0 };
         raw.meters.push(o);
@@ -217,7 +218,7 @@ export function newDraft() {
 /** Validate a draft: returns {rb, summary}. Throws readable errors. */
 export function validateDraft(draft) {
     const rb = normalizeRulebook(draftToRaw(draft));
-    const warnings = rb.meters.flatMap((m) => [m.color, m.colorB, m.colorC, m.colorD].map(contrastWarning).filter(Boolean).map((w) => `${m.name}: ${w}`));
+    const warnings = rb.meters.flatMap((m) => (m.colors ?? [m.color]).map(contrastWarning).filter(Boolean).map((w) => `${m.name}: ${w}`));
     return { rb, warnings, summary: `"${rb.name}" is valid: ${rb.meters.length} meters, ${rb.rules.length} rules, ${rb.milestones.length} milestones, ${rb.influences.length} influences.${warnings.length ? ` Note: ${warnings.join('; ')}.` : ''}` };
 }
 
@@ -366,6 +367,11 @@ export function openBuilder(rb, { onSave, getAiInstructions }) {
         if (!item || !t.dataset?.f) return;
         const section = item.dataset.section;
         const entry = draft[section][Number(item.dataset.index)];
+        if (t.dataset.f === 'preset') {
+            const p = PRESETS[t.value];
+            if (p && section === 'meters') { entry.colors = p.colors.join(', '); entry.fill = p.fill; entry.effect = p.effect; }
+            return render();
+        }
         entry[t.dataset.f] = t.value;
         if (t.dataset.f === 'name' && (section === 'meters' || section === 'rules' || section === 'milestones')) ensureId(draft, section, entry);
         // Re-render only when meter names change (the meter pickers need refreshing); otherwise keep focus.

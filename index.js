@@ -6,7 +6,7 @@
 import {
     applyMessage, buildPrompt, changedPromptTexts, createState, dryRun, getInfluence, normalizeRulebook, repairState,
 } from './engine.js';
-import { DEFAULT_LOOK, normalizeLook, resolveLook, pipVars } from './visuals.js';
+import { DEFAULT_LOOK, normalizeLook, parseColors, resolveLook, pipVars } from './visuals.js';
 import { confirmImport, copyText, openBuilder } from './builder.js';
 import { buildAiPrompt } from './spec.js';
 
@@ -17,7 +17,7 @@ const DEFAULTS = {
     enabled: true, hud: true, notes: true, inject: true, aiAssist: false,
     aiProfileId: '', aiBaseUrl: '', aiModel: '',
     dock: 'right', compact: 'auto', collapsed: {}, rulebooks: [],
-    animations: 'auto', look: { ...DEFAULT_LOOK },
+    animations: 'auto', look: { ...DEFAULT_LOOK }, open: {},
 };
 const HUD_WIDTH = 230;
 const PIP_GLYPHS = { circle: '●', heart: '♥', star: '★', square: '■' };
@@ -441,7 +441,9 @@ function iconHtml(icon) {
 }
 
 function meterHtml(meter, value, color) {
-    const v = resolveLook(meter, settings().look, color);
+    const range = meter.max - meter.min;
+    const pctNow = Number.isFinite(range) && range > 0 ? ((value - meter.min) / range) * 100 : 0;
+    const v = resolveLook(meter, settings().look, color, pctNow);
     const attr = (cls) => ` class="${cls}${v.classes.length ? ' ' + v.classes.join(' ') : ''}" style="${esc(v.vars.join(';'))}"`;
     if (meter.type === 'pips') {
         const total = Math.min(Math.round(meter.max - meter.min), 20);
@@ -550,8 +552,7 @@ function renderDrawer() {
     $id('runebook_anim').value = s.animations;
     $id('runebook_look_fill').value = s.look.fill;
     $id('runebook_look_effect').value = s.look.effect;
-    $id('runebook_look_a').value = s.look.color;
-    $id('runebook_look_b').value = s.look.colorB;
+    $id('runebook_look_colors').value = s.look.colors.join(', ');
 
     const profileSelect = $id('runebook_ai_profile');
     const selectedProfile = s.aiProfileId;
@@ -668,6 +669,7 @@ function runTest() {
 }
 
 function buildDrawer() {
+    const op = (key, dflt = false) => ((settings().open ?? {})[key] ?? dflt ? ' open' : '');
     const options = EXAMPLES.map((e) => `<option value="${e}">${e.replace(/_/g, ' ')}</option>`).join('');
     return `
     <div id="runebook_settings" class="inline-drawer">
@@ -680,7 +682,7 @@ function buildDrawer() {
                 <input type="checkbox" id="runebook_enabled"><span>Enable Runebook (master switch)</span>
             </label>
 
-            <details class="rb-info">
+            <details class="rb-info rb-sec" data-sec="how"${op('how')}>
                 <summary>How it works and what it costs</summary>
                 <ul>
                     <li>A <b>rulebook</b> has <b>meters</b> (scores), <b>rules</b> (keywords that move a meter) and <b>influences</b> (status text and AI instructions at different levels).</li>
@@ -691,11 +693,62 @@ function buildDrawer() {
                 </ul>
             </details>
 
-            <h4>Features</h4>
+            <details class="rb-info rb-sec" data-sec="rulebooks"${op('rulebooks', true)}>
+                <summary>Rulebooks</summary>
+            <small>Tick a rulebook to attach it to the current chat.</small>
+            <div id="runebook_list"></div>
+            <div class="flex-container">
+                <select id="runebook_example" class="text_pole">${options}</select>
+                <div class="menu_button" id="runebook_load_example" title="Add a bundled example or the blank template">Add example</div>
+            </div>
+            <div class="flex-container">
+                <div class="menu_button" id="runebook_new" title="Build a rulebook with a form: no JSON needed">New rulebook (guided)</div>
+                <div class="menu_button" id="runebook_import" title="Import a rulebook .json file">Import JSON</div>
+                <small>Only use rulebooks you trust: their text is added to your AI's user-role prompt context. You will see changed text before importing or saving.</small>
+                <div class="menu_button" id="runebook_reset" title="Set this chat's meters back to their starting values">Reset meters</div>
+                <div class="menu_button" id="runebook_rescan" title="Replay the whole chat, greeting included, to rebuild meters. Dice rules re-roll.">Rescan chat</div>
+            </div>
+            <input type="file" id="runebook_file" accept=".json,application/json" hidden>
+
+            </details>
+
+            <details class="rb-info rb-sec" data-sec="features"${op('features')}>
+                <summary>Features and panel</summary>
             <label class="checkbox_label" title="Show the meters panel next to the chat."><input type="checkbox" id="runebook_hud_toggle"><span>Meters panel</span></label>
             <label class="checkbox_label" title="Brief notes like 'Trust +1 (Shared a secret)' when a meter moves."><input type="checkbox" id="runebook_notes_toggle"><span>Change notes</span></label>
             <label class="checkbox_label" title="Off = meters still track and show, but nothing is sent to the AI."><input type="checkbox" id="runebook_inject_toggle"><span>Send meter info to the AI</span></label>
-            <h4>AI-assisted rule evaluation</h4>
+            <div class="flex-container">
+                <label>Dock <select id="runebook_dock" class="text_pole">
+                    <option value="right">Right of chat</option><option value="left">Left of chat</option><option value="float">Floating top right</option>
+                </select></label>
+                <label>Size <select id="runebook_compact" class="text_pole">
+                    <option value="auto">Auto (compact if 3+)</option><option value="off">Always full</option><option value="on">Always compact</option>
+                </select></label>
+            </div>
+            </details>
+
+            <details class="rb-info rb-sec" data-sec="look"${op('look')}>
+                <summary>Look and animations</summary>
+            <div class="flex-container">
+                <label>Animations <select id="runebook_anim" class="text_pole">
+                    <option value="auto">On (follows system motion setting)</option><option value="off">Off</option>
+                </select></label>
+            </div>
+            <small>Default look for meters that do not set their own. Solid with no effect is the original look. Animations are CSS-only and pause automatically if your system asks for reduced motion.</small>
+            <div class="flex-container">
+                <label>Fill <select id="runebook_look_fill" class="text_pole">
+                    <option value="solid">Solid</option><option value="gradient">Gradient</option><option value="animated">Animated gradient</option><option value="stepped">Stepped (bands)</option>
+                </select></label>
+                <label>Effect <select id="runebook_look_effect" class="text_pole">
+                    <option value="none">None</option><option value="shimmer">Shimmer</option><option value="pulse">Pulse</option><option value="glow">Glow</option>
+                </select></label>
+                <label>Colors <input id="runebook_look_colors" class="text_pole" placeholder="theme color, or e.g. #c62828, gold, green"></label>
+            </div>
+
+            </details>
+
+            <details class="rb-info rb-sec" data-sec="ai"${op('ai')}>
+                <summary>AI-assisted rule evaluation</summary>
             <label class="checkbox_label" title="When enabled, AI evaluates rules with an aiCondition. Runebook applies only the configured rule actions.">
                 <input type="checkbox" id="runebook_ai_toggle"><span>Enable AI-assisted mode</span>
             </label>
@@ -713,53 +766,17 @@ function buildDrawer() {
             <div class="menu_button" id="runebook_ai_test" title="Sends a tiny sample prompt through the chosen connection. Nothing is added to the chat.">Test AI connection</div>
             <pre id="runebook_ai_result" class="rb-pre"></pre>
             <small>Custom API calls require CORS support. The key is not saved and must be re-entered after reload. AI evaluation sends the message, rule conditions and relevant meter values. With no profile or custom API, the active SillyTavern connection is used, but only with Runebook's own prompt (no character card or chat history).</small>
-            <div class="flex-container">
-                <label>Dock <select id="runebook_dock" class="text_pole">
-                    <option value="right">Right of chat</option><option value="left">Left of chat</option><option value="float">Floating top right</option>
-                </select></label>
-                <label>Size <select id="runebook_compact" class="text_pole">
-                    <option value="auto">Auto (compact if 3+)</option><option value="off">Always full</option><option value="on">Always compact</option>
-                </select></label>
-            </div>
-            <div class="flex-container">
-                <label>Animations <select id="runebook_anim" class="text_pole">
-                    <option value="auto">On (follows system motion setting)</option><option value="off">Off</option>
-                </select></label>
-            </div>
-            <small>Default look for meters that do not set their own. Solid with no effect is the original look. Animations are CSS-only and pause automatically if your system asks for reduced motion.</small>
-            <div class="flex-container">
-                <label>Fill <select id="runebook_look_fill" class="text_pole">
-                    <option value="solid">Solid</option><option value="gradient">Gradient</option><option value="animated">Animated gradient</option>
-                </select></label>
-                <label>Effect <select id="runebook_look_effect" class="text_pole">
-                    <option value="none">None</option><option value="shimmer">Shimmer</option><option value="pulse">Pulse</option><option value="glow">Glow</option>
-                </select></label>
-                <label>Color A <input id="runebook_look_a" class="text_pole" placeholder="theme color"></label>
-                <label>Color B <input id="runebook_look_b" class="text_pole" placeholder="same as A"></label>
-            </div>
+            </details>
 
-            <h4>Rulebooks</h4>
-            <small>Tick a rulebook to attach it to the current chat.</small>
-            <div id="runebook_list"></div>
-            <div class="flex-container">
-                <select id="runebook_example" class="text_pole">${options}</select>
-                <div class="menu_button" id="runebook_load_example" title="Add a bundled example or the blank template">Add example</div>
-            </div>
-            <div class="flex-container">
-                <div class="menu_button" id="runebook_new" title="Build a rulebook with a form: no JSON needed">New rulebook (guided)</div>
-                <div class="menu_button" id="runebook_import" title="Import a rulebook .json file">Import JSON</div>
-                <small>Only use rulebooks you trust: their text is added to your AI's user-role prompt context. You will see changed text before importing or saving.</small>
-                <div class="menu_button" id="runebook_reset" title="Set this chat's meters back to their starting values">Reset meters</div>
-                <div class="menu_button" id="runebook_rescan" title="Replay the whole chat, greeting included, to rebuild meters. Dice rules re-roll.">Rescan chat</div>
-            </div>
-            <input type="file" id="runebook_file" accept=".json,application/json" hidden>
-
-            <h4>Make a rulebook with an AI assistant</h4>
+            <details class="rb-info rb-sec" data-sec="make"${op('make')}>
+                <summary>Make a rulebook with an AI assistant</summary>
             <small>Describe your tracker, then copy the instructions into any AI assistant (ChatGPT, Claude, a local model). It will reply with JSON you can import.</small>
             <textarea id="runebook_idea" class="text_pole" rows="2" placeholder="e.g. Track a rival's jealousy (0-100) and my reputation (5 pips)..."></textarea>
             <div class="menu_button" id="runebook_copy_ai" title="Copies your description plus the complete, current rulebook format">Copy AI instructions</div>
 
-            <details class="rb-info">
+            </details>
+
+            <details class="rb-info rb-sec" data-sec="adv"${op('adv')}>
             <summary>Advanced: edit raw JSON</summary>
             <div class="flex-container">
                 <select id="runebook_editor_book" class="text_pole"><option value="">New rulebook draft</option></select>
@@ -774,7 +791,8 @@ function buildDrawer() {
             <small id="runebook_editor_result"></small>
             </details>
 
-            <h4>Test a message</h4>
+            <details class="rb-info rb-sec" data-sec="test"${op('test')}>
+                <summary>Test a message</summary>
             <small>See which rules would fire. Nothing is changed.</small>
             <textarea id="runebook_test_text" class="text_pole" rows="2" placeholder="Type a sample message..."></textarea>
             <div class="flex-container">
@@ -783,7 +801,9 @@ function buildDrawer() {
             </div>
             <pre id="runebook_test_result" class="rb-pre"></pre>
 
-            <details class="rb-info">
+            </details>
+
+            <details class="rb-info rb-sec" data-sec="faq"${op('faq')}>
                 <summary>FAQ</summary>
                 <ul>
                     <li><b>What does "No profile selected" do?</b> AI-assisted checks use the custom fallback API if you filled one in; otherwise they use the connection currently open in API Connections, sending only Runebook's own prompt.</li>
@@ -795,7 +815,7 @@ function buildDrawer() {
                 </ul>
             </details>
 
-            <details class="rb-info">
+            <details class="rb-info rb-sec" data-sec="preview"${op('preview')}>
                 <summary>Prompt preview</summary>
                 <small id="runebook_preview_info"></small>
                 <pre id="runebook_preview" class="rb-pre"></pre>
@@ -879,15 +899,22 @@ function bindDrawer() {
         settings().compact = e.target.value; settings().collapsed = {}; save(); renderHud();
     });
 
+    // <details> toggle events do not bubble, so listen in the capture phase. Remember which sections are open.
+    $id('runebook_settings').addEventListener('toggle', (e) => {
+        const key = e.target?.dataset?.sec;
+        if (!key) return;
+        settings().open = { ...(settings().open ?? {}), [key]: e.target.open };
+        save();
+    }, true);
     $id('runebook_anim').addEventListener('change', (e) => { settings().animations = e.target.value; save(); renderHud(); });
     const lookChange = () => {
         settings().look = normalizeLook({
             fill: $id('runebook_look_fill').value, effect: $id('runebook_look_effect').value,
-            color: $id('runebook_look_a').value.trim(), colorB: $id('runebook_look_b').value.trim(),
+            colors: parseColors($id('runebook_look_colors').value),
         });
         save(); renderHud();
     };
-    for (const id of ['runebook_look_fill', 'runebook_look_effect', 'runebook_look_a', 'runebook_look_b']) {
+    for (const id of ['runebook_look_fill', 'runebook_look_effect', 'runebook_look_colors']) {
         $id(id).addEventListener('change', lookChange);
     }
 

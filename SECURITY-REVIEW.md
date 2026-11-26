@@ -40,4 +40,4 @@ and third-party SillyTavern runtime interactions were not exercised.
 
 ## Status
 
-Mitigated, but not eliminated, in the 2.4.1 release line and retained in 2.5.0: imported or edited rulebooks require review of AI-facing text (with heuristic warnings), and Runebook's extension prompt is sent in the USER role rather than the SYSTEM role. This lowers the prompt's authority but cannot guarantee that a model will ignore malicious text. The review also covers labels and judge-model data that are included in prompts.
+Mitigated, but not eliminated, in the 2.4.1 release line and retained in 2.5.0 and 2.6.0: imported or edited rulebooks require review of AI-facing text (with heuristic warnings), and Runebook's extension prompt is sent in the USER role rather than the SYSTEM role. This lowers the prompt's authority but cannot guarantee that a model will ignore malicious text. The review also covers labels and judge-model data that are included in prompts.

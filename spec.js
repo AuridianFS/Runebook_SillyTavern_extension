@@ -43,7 +43,7 @@ Each meter is an object:
 - "min" (default 0) and "max" (default 100, or 1000000000 for number). max must be greater than min.
 - "start": starting value, default min. Clamped into range.
 - "decay": optional {"after": whole number >= 1, "amount": number}. After that many messages in a row where the meter did not change, "amount" is added (use a negative amount to drift down).
-- Look (all optional): "icon" (one emoji, or Font Awesome classes like "fa-solid fa-heart"), "color" ("#ff6b9d" or a color name), "style" ("bar" or "slider", for type bar), "pip" ("circle", "heart", "star" or "square", for type pips). Optional animated look: "colorB", "colorC", "colorD" (up to three more gradient colors after "color", which is Color A; stops are spread evenly), "fill" ("solid" default, "gradient" or "animated" for a moving gradient), "effect" ("none" default, "shimmer", "pulse" or "glow"). Gradient and effects are cosmetic only; leave them out for a plain meter.
+- Look (all optional): "icon" (one emoji, or Font Awesome classes like "fa-solid fa-heart"), "color" ("#ff6b9d" or a color name), "style" ("bar" or "slider", for type bar), "pip" ("circle", "heart", "star" or "square", for type pips). Optional animated look: "colors" (a list of up to 26 colors; one = solid, two or more = gradient; "color" alone still works), "fill" ("solid" default, "gradient", "animated" for a moving gradient, or "stepped" where the meter range is split into equal bands and the whole meter takes the current band's color), "effect" ("none" default, "shimmer", "pulse" or "glow"). Gradient and effects are cosmetic only; leave them out for a plain meter.
 - For type "pips", keep max small (20 or less); one pip is drawn per point.
 
 ## Rules

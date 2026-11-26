@@ -3,17 +3,32 @@ import { FILL_STYLES, EFFECTS } from './engine.js';
 
 const COLOR_RE = /^(#[0-9a-f]{3,8}|[a-z]{3,20})$/i;
 
-export const DEFAULT_LOOK = { fill: 'solid', effect: 'none', color: '', colorB: '' };
+export const DEFAULT_LOOK = { fill: 'solid', effect: 'none', colors: [] };
 export const ANIMATION_MODES = ['auto', 'off'];
 
-/** Clean a saved "default look" object; anything invalid falls back to the plain default. */
+/** Ready-made looks: pick one in the builder to fill in colors, fill and effect. */
+export const PRESETS = {
+    fire: { colors: ['#ffeb3b', '#ff9800', '#e53935', '#7f0000'], fill: 'animated', effect: 'glow' },
+    ocean: { colors: ['#00e5ff', '#2979ff', '#1a237e'], fill: 'gradient', effect: 'shimmer' },
+    neon: { colors: ['#ff00e5', '#00e5ff', '#76ff03'], fill: 'animated', effect: 'glow' },
+    royal: { colors: ['#ffd700', '#7e57c2', '#311b92'], fill: 'gradient', effect: 'shimmer' },
+    'traffic light': { colors: ['#e53935', '#fdd835', '#43a047'], fill: 'stepped', effect: 'none' },
+};
+
+/** Split "#f00, gold #0f0" into color words. */
+export function parseColors(text) {
+    return String(text ?? '').split(/[\s,]+/).filter(Boolean);
+}
+
+/** Clean a saved "default look" object; anything invalid falls back to the plain default. Reads 2.5.x color/colorB too. */
 export function normalizeLook(raw) {
     const r = raw && typeof raw === 'object' ? raw : {};
+    const given = Array.isArray(r.colors) ? r.colors : [r.color, r.colorB];
+    const colors = given.map((c) => String(c ?? '')).filter((c) => COLOR_RE.test(c)).slice(0, 26);
     return {
         fill: FILL_STYLES.includes(r.fill) ? r.fill : DEFAULT_LOOK.fill,
         effect: EFFECTS.includes(r.effect) ? r.effect : DEFAULT_LOOK.effect,
-        color: COLOR_RE.test(String(r.color ?? '')) ? String(r.color) : '',
-        colorB: COLOR_RE.test(String(r.colorB ?? '')) ? String(r.colorB) : '',
+        colors,
     };
 }
 
@@ -22,19 +37,23 @@ export function normalizeLook(raw) {
  * Meter fields win over the global default look; `colorOverride` (from an influence band) replaces Color A.
  * Up to four color stops (A-D) are spread evenly across a gradient. With nothing set the look is the original plain one.
  */
-export function resolveLook(meter, look = DEFAULT_LOOK, colorOverride = '') {
+export function resolveLook(meter, look = DEFAULT_LOOK, colorOverride = '', pct = 0) {
     const fill = meter.fill ?? look.fill ?? 'solid';
     const effect = meter.effect ?? look.effect ?? 'none';
-    const a = colorOverride || meter.color || look.color || '';
-    const rest = meter.colorB || meter.colorC || meter.colorD
-        ? [meter.colorB, meter.colorC, meter.colorD].filter(Boolean)
-        : [look.colorB].filter(Boolean);
-    const stops = [a || 'var(--SmartThemeQuoteColor)', ...rest];
+    const own = meter.colors ?? (meter.color ? [meter.color] : null);
+    let colors = own ?? look.colors ?? [];
+    if (colorOverride) colors = [colorOverride, ...colors.slice(1)];
+    // Stepped: the meter range is cut into equal bands, one color each, and the whole meter takes the current band's color.
+    if (fill === 'stepped' && colors.length > 1 && !colorOverride) {
+        const idx = Math.min(Math.floor((Math.max(0, Math.min(100, pct)) / 100) * colors.length), colors.length - 1);
+        colors = [colors[idx]];
+    }
+    const stops = colors.length ? colors : ['var(--SmartThemeQuoteColor)'];
     const classes = [];
-    if (fill !== 'solid') classes.push(`rb-fill-${fill}`);
+    if (fill === 'gradient' || fill === 'animated') classes.push(`rb-fill-${fill}`);
     if (effect !== 'none') classes.push(`rb-fx-${effect}`);
     const vars = [];
-    if (a) vars.push(`--rb-a:${a}`, `--rb-color:${a}`);
+    if (colors.length) vars.push(`--rb-a:${colors[0]}`, `--rb-color:${colors[0]}`);
     vars.push(`--rb-b:${stops[1] ?? stops[0]}`, `--rb-last:${stops[stops.length - 1]}`);
     // Plain list for linear-gradient(); animated gradients loop back to the first color so the motion is seamless.
     vars.push(`--rb-grad:${(fill === 'animated' ? [...stops, stops[0]] : stops.length > 1 ? stops : [stops[0], stops[0]]).join(',')}`);

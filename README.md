@@ -84,13 +84,14 @@ Meters can have a gradient or a gentle animation. All of it is optional; without
 
 ```json
 { "id": "luck", "name": "Luck", "type": "bar", "min": 0, "max": 100, "start": 50,
-  "color": "#c62828", "colorB": "#ffb300", "colorC": "#43a047", "fill": "animated", "effect": "shimmer" }
+  "colors": ["#c62828", "#ffb300", "#43a047"], "fill": "animated", "effect": "shimmer" }
 ```
 
-- `fill`: `solid` (default), `gradient`, or `animated` (the gradient slowly flows).
+- `fill`: `solid` (default), `gradient`, `animated` (the gradient slowly flows), or `stepped` (the range is split into equal bands and the whole meter takes the current band's color, like a traffic light).
 - `effect`: `none` (default), `shimmer`, `pulse`, or `glow`.
-- `color`, `colorB`, `colorC`, `colorD`: up to four gradient colors (A to D), spread evenly. Pips step through them; emoji and icon pips cannot be tinted, so they use Color A.
-- Drawer: **Animations** can be switched off, and a default look can be set for meters without their own. Animations are pure CSS, pause when your system asks for reduced motion, and cost nothing when off.
+- `colors`: a list of up to 26 colors, spread evenly. One color is solid. `color` on its own still works. Pips step through the colors; emoji and icon pips cannot be tinted, so they use the first color.
+- The guided builder has a **Preset look** dropdown (Fire, Ocean, Neon, Royal, Traffic light) and a single comma-separated Colors box.
+- Drawer: **Animations** can be switched off, and a default look can be set for meters without their own. Animations are pure CSS and pause when your system asks for reduced motion.
 - Several coin types (gold, silver, copper) work best as separate meters, each with its own color. See `examples/coin_purse.json`.
 - Custom CSS can override `--rb-a`, `--rb-b`, `--rb-last` and `--rb-grad` on `.rb-bar`, `.rb-slider` or `.rb-pips`.
 

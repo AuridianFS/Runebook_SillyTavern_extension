@@ -1,7 +1,14 @@
 # Changelog
 
-## 2.5.0
+## 2.6.0
 - Retained the 2.4.1 prompt-injection mitigation: rulebook context uses the USER role, and import/save review covers AI-facing labels and judge-model data.
+- Colors are now a list: `"colors": ["#c62828", "#ffb300", "gold"]`, up to 26. One color is solid, two or more make a gradient. The older `color` (and 2.5.0's `colorB` to `colorD`) still load; they are converted to the list.
+- New fill style `stepped`: the meter range is split into equal bands and the whole meter takes the current band's color (a traffic-light meter).
+- Preset looks (Fire, Ocean, Neon, Royal, Traffic light) in the guided builder fill in colors, fill and effect in one pick. The builder's color fields are now a single comma-separated list.
+- Settings drawer reorganized into collapsible sections (Rulebooks, Features and panel, Look and animations, AI-assisted evaluation, Make with an AI assistant, Advanced, Test, FAQ, Prompt preview). Open/closed state is remembered. Only Rulebooks is open on first run.
+- Default look in the drawer takes a color list too. Settings saved by 2.5.0 are migrated automatically.
+
+## 2.5.0
 - Animated tracker visuals (all optional). Meters can set `fill` (`solid`, `gradient`, `animated`), `effect` (`none`, `shimmer`, `pulse`, `glow`) and up to four colors: `color` (A), `colorB`, `colorC`, `colorD`, spread evenly along the gradient. Works for bars, sliders and pips.
 - New drawer settings: Animations on/off, plus a default fill, effect and colors for meters that set none of their own. The guided builder has fields for all of it and warns (without blocking) about colors that may be hard to see on dark or light themes.
 - CSS-only animation: no JavaScript timers. Respects the system "reduce motion" setting and the new Animations: Off switch. Glow is static.

@@ -9,7 +9,8 @@ export const SOURCES = ['user', 'ai', 'both'];
 export const FREQUENCIES = ['always', 'once_per_chat'];
 export const PIP_SHAPES = ['circle', 'heart', 'star', 'square'];
 export const BAR_STYLES = ['bar', 'slider'];
-export const FILL_STYLES = ['solid', 'gradient', 'animated'];
+export const FILL_STYLES = ['solid', 'gradient', 'animated', 'stepped'];
+export const MAX_COLORS = 26;
 export const EFFECTS = ['none', 'shimmer', 'pulse', 'glow'];
 export const CONDITION_OPERATORS = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte'];
 const COLOR_RE = /^(#[0-9a-f]{3,8}|[a-z]{3,20})$/i;
@@ -72,10 +73,15 @@ function normalizeMeter(raw, i) {
         }
         meter.icon = icon;
     }
-    if (raw.color != null) {
-        if (!COLOR_RE.test(String(raw.color))) throw new Error(`Meter "${name}" color must be like "#ff6b9d" or "red"`);
-        meter.color = String(raw.color);
+    // Colors: "colors" (list, up to 26) or the older color + colorB/colorC/colorD. Stored as color (first) + colors (only if 2+).
+    const list = Array.isArray(raw.colors) ? raw.colors : [raw.color, raw.colorB, raw.colorC, raw.colorD].filter((c) => c != null && c !== '');
+    if (raw.colors != null && !Array.isArray(raw.colors)) throw new Error(`Meter "${name}" colors must be a list like ["#ff0000", "gold"]`);
+    if (list.length > MAX_COLORS) throw new Error(`Meter "${name}" can have at most ${MAX_COLORS} colors`);
+    for (const c of list) {
+        if (!COLOR_RE.test(String(c))) throw new Error(`Meter "${name}" color "${c}" must be like "#ff6b9d" or "red"`);
     }
+    if (list.length) meter.color = String(list[0]);
+    if (list.length > 1) meter.colors = list.map(String);
     if (raw.pip != null) {
         if (!PIP_SHAPES.includes(raw.pip)) throw new Error(`Meter "${name}" pip must be one of ${PIP_SHAPES.join(', ')}`);
         meter.pip = raw.pip;
@@ -83,18 +89,6 @@ function normalizeMeter(raw, i) {
     if (raw.style != null) {
         if (!BAR_STYLES.includes(raw.style)) throw new Error(`Meter "${name}" style must be one of ${BAR_STYLES.join(', ')}`);
         meter.style = raw.style;
-    }
-    if (raw.colorB != null) {
-        if (!COLOR_RE.test(String(raw.colorB))) throw new Error(`Meter "${name}" colorB must be like "#ff6b9d" or "red"`);
-        meter.colorB = String(raw.colorB);
-    }
-    if (raw.colorC != null) {
-        if (!COLOR_RE.test(String(raw.colorC))) throw new Error(`Meter "${name}" colorC must be like "#ff6b9d" or "red"`);
-        meter.colorC = String(raw.colorC);
-    }
-    if (raw.colorD != null) {
-        if (!COLOR_RE.test(String(raw.colorD))) throw new Error(`Meter "${name}" colorD must be like "#ff6b9d" or "red"`);
-        meter.colorD = String(raw.colorD);
     }
     if (raw.fill != null) {
         if (!FILL_STYLES.includes(raw.fill)) throw new Error(`Meter "${name}" fill must be one of ${FILL_STYLES.join(', ')}`);
