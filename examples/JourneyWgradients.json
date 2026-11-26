@@ -1,0 +1,495 @@
+{
+  "name": "Journey",
+  "meters": [
+    {
+      "id": "purse",
+      "name": "Purse",
+      "type": "bar",
+      "min": 0,
+      "max": 100,
+      "start": 50,
+      "icon": "🪙"
+    },
+    {
+      "id": "h20",
+      "name": "H2O",
+      "type": "bar",
+      "min": 0,
+      "max": 100,
+      "start": 75,
+      "style": "bar",
+      "colors": ["#d3d3d3", "#90EE90", "#87CEEB", "#4169E1", "#C71585"],
+      "fill": "animated"
+    },
+    {
+      "id": "food",
+      "name": "Food",
+      "type": "bar",
+      "min": 0,
+      "max": 100,
+      "start": 50,
+      "style": "bar",
+      "fill": "stepped"
+    },
+    {
+      "id": "hp",
+      "name": "HP",
+      "type": "bar",
+      "min": 0,
+      "max": 100,
+      "start": 100,
+      "style": "bar",
+      "colors": ["#FF4500", "#FFA500", "#FFFF00", "#32CD32"],
+      "fill": "gradient"
+    },
+    {
+      "id": "hygiene",
+      "name": "Hygiene",
+      "type": "bar",
+      "min": 0,
+      "max": 100,
+      "start": 50,
+      "style": "slider",
+      "fill": "stepped"
+    },
+    {
+      "id": "fatigue",
+      "name": "Fatigue",
+      "type": "bar",
+      "min": 0,
+      "max": 100,
+      "start": 20,
+      "colors": ["#4CAF50", "#FDD835", "#FF7043", "#C62828"],
+      "fill": "gradient"
+    },
+    {
+      "id": "stamina",
+      "name": "Stamina",
+      "type": "bar",
+      "min": 0,
+      "max": 100,
+      "start": 75,
+      "colors": ["#C62828", "#FFB300", "#66BB6A", "#00E5FF"],
+      "fill": "gradient"
+    },
+    {
+      "id": "supplies",
+      "name": "Supplies",
+      "type": "bar",
+      "min": 0,
+      "max": 100,
+      "start": 75,
+      "colors": ["#C62828", "#FB8C00", "#FDD835", "#43A047"],
+      "fill": "gradient"
+    },
+    {
+      "id": "morale",
+      "name": "Morale",
+      "type": "bar",
+      "min": 0,
+      "max": 100,
+      "start": 60,
+      "colors": ["#C62828", "#FB8C00", "#FDD835", "#4CAF50"],
+      "fill": "gradient"
+    },
+    {
+      "id": "progress",
+      "name": "Progress",
+      "type": "bar",
+      "min": 0,
+      "max": 100,
+      "start": 10,
+      "colors": ["#EF5350", "#FFA726", "#FFEE58", "#66BB6A", "#29B6F6"],
+      "fill": "gradient"
+    }
+  ],
+  "rules": [
+    {
+      "id": "coin_gain_copper",
+      "name": "Find copper",
+      "meter": "purse",
+      "keywords": ["copper coin", "coppers", "finds copper"],
+      "change": 5,
+      "cooldown": 3
+    },
+    {
+      "id": "coin_gain_silver",
+      "name": "Find silver",
+      "meter": "purse",
+      "keywords": ["silver coin", "silvers", "finds silver"],
+      "change": 10,
+      "cooldown": 3
+    },
+    {
+      "id": "coin_gain_gold",
+      "name": "Find gold",
+      "meter": "purse",
+      "keywords": ["gold coin", "golds", "finds gold"],
+      "change": 20,
+      "cooldown": 3
+    },
+    {
+      "id": "coin_spend",
+      "name": "Spend money",
+      "meter": "purse",
+      "keywords": ["spend", "buy with coin", "costs coins"],
+      "change": -10,
+      "cooldown": 2
+    },
+    {
+      "id": "coin_earn",
+      "name": "Earn money",
+      "meter": "purse",
+      "keywords": ["earned", "wage", "payment", "reward"],
+      "change": 15,
+      "cooldown": 3
+    },
+    {
+      "id": "drink_water",
+      "name": "Drink water",
+      "meter": "h20",
+      "keywords": ["drank water", "hydrated", "thirst quenched"],
+      "change": 15,
+      "on": "user"
+    },
+    {
+      "id": "eat_food",
+      "name": "Eat food",
+      "meter": "food",
+      "keywords": ["ate", "dinner", "lunch", "breakfast"],
+      "change": 5,
+      "on": "user"
+    },
+    {
+      "id": "eat_red_food",
+      "name": "Eat red food",
+      "meter": "food",
+      "keywords": ["tomato", "watermelon", "strawberry", "red grape"],
+      "change": 8,
+      "on": "user"
+    },
+    {
+      "id": "eat_orange_food",
+      "name": "Eat orange food",
+      "meter": "food",
+      "keywords": ["carrot", "sweet potato", "orange"],
+      "change": 7,
+      "on": "user"
+    },
+    {
+      "id": "eat_yellow_food",
+      "name": "Eat yellow food",
+      "meter": "food",
+      "keywords": ["corn", "mango", "yellow pepper"],
+      "change": 6,
+      "on": "user"
+    },
+    {
+      "id": "eat_green_food",
+      "name": "Eat green food",
+      "meter": "food",
+      "keywords": ["spinach", "broccoli", "green bean"],
+      "change": 9,
+      "on": "user"
+    },
+    {
+      "id": "eat_bluepurple_food",
+      "name": "Eat blue/purple food",
+      "meter": "food",
+      "keywords": ["blueberry", "eggplant", "purple cabbage"],
+      "change": 8,
+      "on": "user"
+    },
+    {
+      "id": "eat_brown_food",
+      "name": "Eat brown food",
+      "meter": "food",
+      "keywords": ["mushroom", "whole grain"],
+      "change": 5,
+      "on": "user"
+    },
+    {
+      "id": "eat_white_food",
+      "name": "Eat white food",
+      "meter": "food",
+      "keywords": ["onion", "garlic", "cabbage"],
+      "change": 4,
+      "on": "user"
+    },
+    {
+      "id": "take_damage",
+      "name": "Take damage",
+      "meter": "hp",
+      "keywords": ["wounded", "hurt", "injured", "hit"],
+      "change": -15,
+      "on": "ai"
+    },
+    {
+      "id": "heal",
+      "name": "Heal up",
+      "meter": "hp",
+      "keywords": ["healed", "bandaged", "recovered health"],
+      "change": 20,
+      "on": "user"
+    },
+    {
+      "id": "dirty_filthy",
+      "name": "Become dirty",
+      "meter": "hygiene",
+      "keywords": ["filthy", "mud covered", "sweat"],
+      "change": -25,
+      "on": "ai"
+    },
+    {
+      "id": "dirty_used",
+      "name": "Become used/dirty",
+      "meter": "hygiene",
+      "keywords": ["dirty", "used", "grime"],
+      "change": -15,
+      "on": "ai"
+    },
+    {
+      "id": "clean_shower_bath",
+      "name": "Clean up",
+      "meter": "hygiene",
+      "keywords": ["showered", "bathed", "scrubbed", "cleansed"],
+      "change": 25,
+      "on": "user"
+    },
+    {
+      "id": "fatigue_increase_travel",
+      "name": "Fatigue from travel",
+      "meter": "fatigue",
+      "keywords": ["march", "hike", "run", "sprint"],
+      "change": 10,
+      "on": "user"
+    },
+    {
+      "id": "fatigue_increase_labor_fight",
+      "name": "Fatigue from labor/fight",
+      "meter": "fatigue",
+      "keywords": ["labor", "work", "fight", "combat"],
+      "change": 15,
+      "on": "ai"
+    },
+    {
+      "id": "fatigue_increase_stress_fear_sleepless",
+      "name": "Fatigue from stress/fear/sleepless",
+      "meter": "fatigue",
+      "keywords": ["stress", "anxiety", "fear", "sleepless"],
+      "change": 12,
+      "on": "ai"
+    },
+    {
+      "id": "fatigue_sleep_rest_camp_inn",
+      "name": "Fatigue reduced by rest/sleep/camp/inn/hotel",
+      "meter": "fatigue",
+      "keywords": ["sleep", "nap", "rest", "camp", "inn", "hotel"],
+      "change": -20,
+      "on": "user"
+    },
+    {
+      "id": "fatigue_recovery_downtime_meditation",
+      "name": "Fatigue reduced by recovery/downtime/meditation",
+      "meter": "fatigue",
+      "keywords": ["recover", "meditation", "downtime"],
+      "change": -10,
+      "on": "ai"
+    },
+    {
+      "id": "stamina_increase_food_water_rest",
+      "name": "Stamina restored by food/water/rest/recover/energize/break/recharge/good sleep",
+      "meter": "stamina",
+      "keywords": ["food", "meal", "water", "rest", "recover", "energize", "break", "recharge", "good sleep"],
+      "change": 12,
+      "on": "user"
+    },
+    {
+      "id": "stamina_decrease_running_fighting_carrying_travel_exertion",
+      "name": "Stamina depleted by exertion",
+      "meter": "stamina",
+      "keywords": ["running", "sprinting", "climbing", "swimming", "fighting", "carrying", "hauling", "travel", "labor", "exercise", "exertion"],
+      "change": -15,
+      "on": "ai"
+    },
+    {
+      "id": "supplies_increase_purchase_buy_resupply_loot_gather_forage_scavenging_acquired",
+      "name": "Supplies increased by purchase/buy/resupply/loot/gather/forage/scavenging/supplies acquired/stores/market/merchant/store/crafting",
+      "meter": "supplies",
+      "keywords": ["purchase", "buy", "resupply", "restock", "market", "merchant", "store", "loot", "gather", "forage", "scavenging", "supplies acquired"],
+      "change": 10,
+      "on": "ai"
+    },
+    {
+      "id": "supplies_decrease_consume_use_rations_camping_travel_day_ammunition_medicine_expend_crafting",
+      "name": "Supplies decreased by consume/use/rations/camping/travel day/repair/amdution/medicine/expend/crafting",
+      "meter": "supplies",
+      "keywords": ["consume", "use", "used", "rations", "camping", "travel day", "repair", "amendment", "medicine", "expend", "crafting"],
+      "change": -8,
+      "on": "ai"
+    },
+    {
+      "id": "morale_increase_success_victory_achievement_reward_friendship_affection_celebration_comfort_encouragement_hope_inspiration",
+      "name": "Morale increased by positive events",
+      "meter": "morale",
+      "keywords": ["success", "victory", "achievement", "reward", "friendship", "affection", "celebration", "comfort", "encouragement", "hope", "inspiration"],
+      "change": 8,
+      "on": "user"
+    },
+    {
+      "id": "morale_decrease_failure_defeat_injury_fear_loneliness_rejection_loss_tragedy_despair_humiliation_stress",
+      "name": "Morale decreased by negative events",
+      "meter": "morale",
+      "keywords": ["failure", "defeat", "injury", "fear", "loneliness", "rejection", "loss", "tragedy", "despair", "humiliation", "stress"],
+      "change": -12,
+      "on": "ai"
+    },
+    {
+      "id": "progress_increase_travel_advance_progress_waypoint_milestone_destination_complete_checkpoint_road_traveled_map",
+      "name": "Progress increased by travel/advance/progress/waypoint/milestone/destination/objective complete/checkpoint/road traveled/map progress",
+      "meter": "progress",
+      "keywords": ["travel", "advance", "progress", "waypoint", "milestone", "destination", "objective complete", "checkpoint", "road traveled", "map"],
+      "change": 5,
+      "on": "user"
+    },
+    {
+      "id": "progress_decrease_setback_detour_lost_backtrack_delay_obstacle_interruption_failure",
+      "name": "Progress decreased by setbacks/delay/failure",
+      "meter": "progress",
+      "keywords": ["setback", "detour", "lost", "backtrack", "delay", "obstacle", "interruption", "mission failure"],
+      "change": -3,
+      "on": "ai"
+    }
+  ],
+  "influences": [
+    {
+      "meter": "hp",
+      "min": 0,
+      "max": 25,
+      "status": "Critical",
+      "color": "#FF4500",
+      "description": "Barely alive!",
+      "text": "{{char}} is wounded and unstable."
+    },
+    {
+      "meter": "hp",
+      "min": 26,
+      "max": 60,
+      "status": "Injured",
+      "color": "#FFA500"
+    },
+    {
+      "meter": "hp",
+      "min": 61,
+      "max": 100,
+      "status": "Healthy",
+      "color": "#32CD32",
+      "description": "In good shape."
+    },
+    {
+      "meter": "fatigue",
+      "min": 0,
+      "max": 20,
+      "status": "Rested",
+      "color": "#4CAF50"
+    },
+    {
+      "meter": "fatigue",
+      "min": 21,
+      "max": 40,
+      "status": "Tired",
+      "color": "#FDD835"
+    },
+    {
+      "meter": "fatigue",
+      "min": 41,
+      "max": 60,
+      "status": "Fatigued",
+      "color": "#FF7043"
+    },
+    {
+      "meter": "fatigue",
+      "min": 61,
+      "max": 80,
+      "status": "Exhausted",
+      "color": "#C62828"
+    },
+    {
+      "meter": "fatigue",
+      "min": 81,
+      "max": 100,
+      "status": "Barely Functioning",
+      "color": "#C62828"
+    },
+    {
+      "meter": "stamina",
+      "min": 0,
+      "max": 20,
+      "status": "Depleted",
+      "color": "#C62828"
+    },
+    {
+      "meter": "stamina",
+      "min": 21,
+      "max": 40,
+      "status": "Winded",
+      "color": "#FFB300"
+    },
+    {
+      "meter": "stamina",
+      "min": 41,
+      "max": 60,
+      "status": "Average",
+      "color": "#66BB6A"
+    },
+    {
+      "meter": "stamina",
+      "min": 61,
+      "max": 80,
+      "status": "Energetic",
+      "color": "#00E5FF"
+    },
+    {
+      "meter": "stamina",
+      "min": 81,
+      "max": 100,
+      "status": "Fully Charged",
+      "color": "#00E5FF"
+    },
+    {
+      "meter": "supplies",
+      "min": 0,
+      "max": 20,
+      "status": "Critical Shortage",
+      "color": "#C62828"
+    },
+    {
+      "meter": "supplies",
+      "min": 21,
+      "max": 40,
+      "status": "Low Supplies",
+      "color": "#FB8C00"
+    },
+    {
+      "meter": "supplies",
+      "min": 41,
+      "max": 60,
+      "status": "Adequate",
+      "color": "#FDD835"
+    },
+    {
+      "meter": "supplies",
+      "min": 61,
+      "max": 80,
+      "status": "Well Stocked",
+      "color": "#43A047"
+    },
+    {
+      "meter": "supplies",
+      "min": 81,
+      "max": 100,
+      "status": "Fully Provisioned",
+      "color": "#43A047"
+    }
+  ]
+}
